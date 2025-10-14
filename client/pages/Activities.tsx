@@ -417,6 +417,11 @@ export default function Activities() {
   const handleAddParticipants = async () => {
     if (!selectedInstance) return;
 
+    if (dbReadOnly) {
+      toast({ title: 'Read-only database', description: 'Cannot add participants because the database is in read-only mode.', variant: 'destructive' });
+      return;
+    }
+
     const participantIds = Array.from(selectedParticipants);
 
     try {
