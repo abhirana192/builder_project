@@ -51,6 +51,18 @@ interface GroupMember {
   is_leader?: boolean;
 }
 
+interface GroupBookingSummary {
+  id: number;
+  booking_reference: string;
+  invoice_number?: string;
+  guest_name: string;
+  tour_name: string;
+  start_date?: string;
+  end_date?: string;
+  status: string;
+  payment_status?: string;
+}
+
 interface TourGroup {
   id: number;
   group_name: string;
@@ -88,7 +100,7 @@ export default function GroupBookings() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<TourGroup | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<(TourGroup & { bookings?: GroupBookingSummary[] }) | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -438,7 +450,7 @@ export default function GroupBookings() {
     }]);
   };
 
-  const fetchGroupWithMembers = async (groupId: number): Promise<TourGroup | null> => {
+  const fetchGroupWithMembers = async (groupId: number): Promise<(TourGroup & { bookings?: GroupBookingSummary[] }) | null> => {
     try {
       const response = await fetch(`/api/groups/${groupId}`);
       if (response.ok) {
@@ -612,7 +624,7 @@ export default function GroupBookings() {
     }
   };
 
-  const handlePrintGroup = (group: TourGroup | null) => {
+  const handlePrintGroup = (group: (TourGroup & { bookings?: GroupBookingSummary[] }) | null) => {
     if (!group) return;
 
     // Create a new window for printing
@@ -899,6 +911,23 @@ export default function GroupBookings() {
               <div class="section-title">🚶 Travel Arrangements</div>
               <div class="notes-box">
                 Group members are travelling separately with individual flight arrangements.
+              </div>
+            </div>
+          ` : ''}
+
+          ${group.bookings && group.bookings.length > 0 ? `
+            <div class="section">
+              <div class="section-title">📄 Bookings</div>
+              <div class="info-grid">
+                ${group.bookings.map(b => `
+                  <div class="info-item">
+                    <span class="info-label">Invoice #:</span>
+                    <span class="info-value">${b.invoice_number || ''}</span>
+                    <div class="info-value">Ref: ${b.booking_reference || ''}</div>
+                    <div class="info-value">Guest: ${b.guest_name || ''}</div>
+                    <div class="info-value">Tour: ${b.tour_name || ''}</div>
+                  </div>
+                `).join('')}
               </div>
             </div>
           ` : ''}
@@ -1829,6 +1858,33 @@ export default function GroupBookings() {
                           )}
                         </div>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Bookings (with Invoice Numbers) */}
+                {selectedGroup.bookings && selectedGroup.bookings.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <span className="text-blue-600">📄</span>
+                      Bookings
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedGroup.bookings.map((b) => (
+                        <div key={b.id} className="p-4 border rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <div className="font-medium">Invoice #{b.invoice_number || '—'}</div>
+                            <Badge variant="outline">{b.status}</Badge>
+                          </div>
+                          <div className="text-sm mt-2 space-y-1">
+                            <div>Ref: {b.booking_reference}</div>
+                            <div>Guest: {b.guest_name}</div>
+                            <div>Tour: {b.tour_name}</div>
+                            {b.start_date && <div>Start: {new Date(b.start_date).toLocaleDateString()}</div>}
+                            {b.end_date && <div>End: {new Date(b.end_date).toLocaleDateString()}</div>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
