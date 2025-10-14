@@ -82,7 +82,7 @@ const createTransportForGroup = async (group: any, members: any[], vehicles: any
 
   // Log exact data types and values
   console.log('🔍 TYPE CHECK - Arrival time type:', typeof group.arrival_flight_time, 'Value:', JSON.stringify(group.arrival_flight_time));
-  console.log('🔍 TYPE CHECK - Departure time type:', typeof group.departure_flight_time, 'Value:', JSON.stringify(group.departure_flight_time));
+  console.log('��� TYPE CHECK - Departure time type:', typeof group.departure_flight_time, 'Value:', JSON.stringify(group.departure_flight_time));
 
   // Create pickup transport if arrival details exist
   if (group.arrival_date && group.arrival_flight_time) {
@@ -405,9 +405,13 @@ export const getGroupById: RequestHandler = (req, res) => {
     // Get group members
     const members = queries.getGroupMembers().all(id);
 
+    // Get group bookings (by members) including invoice numbers
+    const bookings = queries.getBookingsForGroup().all(id);
+
     res.json({
       ...group,
-      members
+      members,
+      bookings
     });
   } catch (error) {
     console.error("Error fetching group:", error);
