@@ -294,6 +294,85 @@ const DailyActivityReport: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-purple-600" />
+            Group Bookings ({groupReport.length})
+          </CardTitle>
+          <CardDescription>Groups active within the selected date range, with pax, travel, contact, and notes.</CardDescription>
+          <div className="mt-4 flex flex-wrap gap-3 items-end">
+            <div className="flex flex-col">
+              <label className="text-xs text-muted-foreground mb-1">Start date</label>
+              <input type="date" value={groupStart} onChange={(e) => setGroupStart(e.target.value)} className="border rounded-md px-3 py-2 text-sm bg-background" />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs text-muted-foreground mb-1">End date</label>
+              <input type="date" value={groupEnd} onChange={(e) => setGroupEnd(e.target.value)} className="border rounded-md px-3 py-2 text-sm bg-background" />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs text-muted-foreground mb-1">Status</label>
+              <select value={groupStatus} onChange={(e) => setGroupStatus(e.target.value)} className="border rounded-md px-3 py-2 text-sm bg-background">
+                <option value="">All</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <Button variant="secondary" onClick={fetchReportData}>Load</Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {groupReport.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Group</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Pax</TableHead>
+                  <TableHead>Arrival</TableHead>
+                  <TableHead>Departure</TableHead>
+                  <TableHead>Leader</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Notes</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {groupReport.map(g => (
+                  <TableRow key={g.id}>
+                    <TableCell className="font-medium">{g.group_name}</TableCell>
+                    <TableCell>{g.status}</TableCell>
+                    <TableCell>{g.total_members}</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div>{g.arrival_date || g.tour_start_date || ''}</div>
+                        <div className="text-muted-foreground">{[g.arrival_flight_number, g.arrival_flight_time].filter(Boolean).join(' ')}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div>{g.departure_date || g.tour_end_date || ''}</div>
+                        <div className="text-muted-foreground">{[g.departure_flight_number, g.departure_flight_time].filter(Boolean).join(' ')}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{g.leader_name || ''}</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div>{g.leader_email || ''}</div>
+                        <div>{g.leader_phone || ''}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-[240px] truncate" title={g.group_notes || ''}>{g.group_notes || ''}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-sm text-muted-foreground">No groups found for the selected range.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
             <Plane className="h-5 w-5 text-blue-600" />
             Transport (Arrivals + Departures): {arrivals.length + departures.length}
           </CardTitle>
