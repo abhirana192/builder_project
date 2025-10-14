@@ -1178,6 +1178,7 @@ export default function Activities() {
                             variant="outline"
                             size="sm"
                             onClick={() => openAddParticipants(instance)}
+                            disabled={dbReadOnly}
                           >
                             <UserPlus className="mr-1 h-4 w-4" />
                             Add Participants
