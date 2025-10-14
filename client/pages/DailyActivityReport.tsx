@@ -141,6 +141,17 @@ const DailyActivityReport: React.FC = () => {
 
   useEffect(() => {
     fetchReportData();
+    (async () => {
+      try {
+        const res = await fetch('/api/db/status');
+        if (res.ok) {
+          const data = await res.json();
+          setDbReadOnly(!!data.readOnly);
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
