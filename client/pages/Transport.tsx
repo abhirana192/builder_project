@@ -806,7 +806,7 @@ export default function Transport() {
         if (!isNaN(flightDateTime.getTime())) {
           // Use original flight time for both pickups and dropoffs
           calculatedPickupTime = flightTimeToUse;
-          console.log('✅ Using original flight time:', calculatedPickupTime);
+          console.log('��� Using original flight time:', calculatedPickupTime);
         } else {
           console.error('❌ Invalid flight datetime:', flightTimeToUse);
         }
@@ -1056,10 +1056,8 @@ export default function Transport() {
 
     schedule.groups.forEach((passenger: any) => {
       if (passenger.type === 'group') {
-        // For group entries, find the actual group to get member names
         const group = groups.find(g => g.id === passenger.id);
         if (group) {
-          // Always show individual members if available, regardless of traveling_together status
           if (group.members && group.members.length > 0) {
             group.members.forEach(member => {
               passengerDetails.push({
@@ -1070,7 +1068,6 @@ export default function Transport() {
               });
             });
           } else {
-            // Fallback to group name if no member details available
             passengerDetails.push({
               name: `${group.group_name} (${group.total_members} passengers)`,
               groupName: group.group_name,
@@ -1079,7 +1076,6 @@ export default function Transport() {
             });
           }
         } else {
-          // Fallback if group not found
           passengerDetails.push({
             name: passenger.name || 'Unknown Group',
             groupName: passenger.name || 'Unknown Group',
@@ -1088,17 +1084,13 @@ export default function Transport() {
           });
         }
       } else if (passenger.type === 'member') {
-        // For individual member entries, find which group they belong to
         let memberGroupName = 'Unknown Group';
-
-        // Search through all groups to find which one contains this member
         for (const group of groups) {
           if (group.members?.some(m => m.id === passenger.id)) {
             memberGroupName = group.group_name;
             break;
           }
         }
-
         passengerDetails.push({
           name: passenger.name,
           groupName: memberGroupName,
@@ -1109,6 +1101,44 @@ export default function Transport() {
     });
 
     return passengerDetails;
+  };
+
+  type CombinedAirportTransfer = {
+    groupId: number;
+    groupName: string;
+    passengerCount: number;
+    pickup?: TransportSchedule;
+    dropoff?: TransportSchedule;
+  };
+
+  const buildCombinedAirportTransfers = (): CombinedAirportTransfer[] => {
+    const map = new Map<number, CombinedAirportTransfer>();
+
+    const airportSchedules = schedules.filter(s => (s.transport_type === 'airport_pickup' || s.transport_type === 'airport_dropoff') && Array.isArray(s.groups));
+
+    for (const s of airportSchedules) {
+      const groupEntry = (s.groups as any[]).find(g => g && g.type === 'group' && typeof g.id === 'number');
+      if (!groupEntry) {
+        // Not a traveling-together group; skip combining
+        continue;
+      }
+      const gid = groupEntry.id as number;
+      const gname = groupEntry.name || groupEntry.group_name || 'Group';
+      const existing = map.get(gid) || { groupId: gid, groupName: gname, passengerCount: s.passenger_count || groupEntry.memberCount || 0 };
+      if (s.transport_type === 'airport_pickup') existing.pickup = s;
+      if (s.transport_type === 'airport_dropoff') existing.dropoff = s;
+      existing.passengerCount = existing.passengerCount || s.passenger_count || groupEntry.memberCount || 0;
+      map.set(gid, existing);
+    }
+
+    // Sort by earliest time among pickup/dropoff
+    const list = Array.from(map.values());
+    list.sort((a, b) => {
+      const aTime = a.pickup?.pickup_time || a.dropoff?.pickup_time || '';
+      const bTime = b.pickup?.pickup_time || b.dropoff?.pickup_time || '';
+      return new Date(aTime).getTime() - new Date(bTime).getTime();
+    });
+    return list;
   };
 
   if (loading) {
