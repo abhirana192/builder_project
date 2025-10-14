@@ -1,0 +1,38 @@
+{
+  "group_name": "Test Family Group",
+  "group_type": "family",
+  "tour_start_date": "2024-03-01",
+  "tour_end_date": "2024-03-07",
+  "arrival_date": "2024-02-28",
+  "departure_date": "2024-03-08",
+  "traveling_together": true,
+  "total_cost": 5000,
+  "amount_paid": 1000,
+  "deposit_amount": 500,
+  "members": [
+    {
+      "first_name": "John",
+      "last_name": "TestSmith",
+      "email": "john.testsmith@example.com",
+      "phone": "+1234567890",
+      "nationality": "American",
+      "is_leader": true
+    },
+    {
+      "first_name": "Jane",
+      "last_name": "TestSmith",
+      "email": "john.testsmith@example.com",
+      "phone": "+1234567891",
+      "nationality": "American",
+      "is_leader": false
+    },
+    {
+      "first_name": "Billy",
+      "last_name": "TestSmith",
+      "email": "john.testsmith@example.com",
+      "phone": "+1234567892",
+      "nationality": "American",
+      "is_leader": false
+    }
+  ]
+}
