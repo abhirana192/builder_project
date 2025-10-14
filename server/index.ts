@@ -231,6 +231,16 @@ export function createServer() {
   app.delete("/api/clear/bookings", clearBookingData);
   app.delete("/api/clear/all-transport-bookings", clearAllTransportAndBookings);
 
+  // Block mutating requests if the database is read-only
+  app.use((req, res, next) => {
+    // Import here to avoid circular import at top-level
+    const { DATABASE_IS_READONLY } = require('./db/database');
+    if (DATABASE_IS_READONLY && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      return res.status(503).json({ error: 'Database is in read-only mode. Please contact administrator.', code: 'DATABASE_READONLY' });
+    }
+    next();
+  });
+
   // Activities routes
   app.get("/api/activities", getAllActivities);
   app.get("/api/activities/instances", getActivityInstances);
