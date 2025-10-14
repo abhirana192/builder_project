@@ -137,6 +137,188 @@ const DailyActivityReport: React.FC = () => {
     return passengers.map(p => `${p.name} ${p.groupName ? `(${p.groupName})` : ''}`).join(', ');
   };
 
+  const handlePrintReport = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const style = `
+      body { font-family: Arial, sans-serif; color: #111827; padding: 20px; }
+      h1 { margin: 0 0 6px; }
+      .meta { color: #6b7280; margin-bottom: 14px; }
+      .section { margin: 18px 0; }
+      .section h2 { font-size: 18px; margin: 0 0 8px; color: #111827; }
+      table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      th, td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; vertical-align: top; }
+      th { background: #f3f4f6; }
+      .muted { color: #6b7280; }
+      .nowrap { white-space: nowrap; }
+      @media print { body { padding: 0; } }
+    `;
+
+    const transportRows = [
+      ...arrivals.map(a => ({ ...a, type: 'Arrival' })),
+      ...departures.map(d => ({ ...d, type: 'Departure' })),
+    ].sort((a, b) => a.pickup_time.localeCompare(b.pickup_time));
+
+    const hotelsRows = [
+      ...hotelCheckIns.map(h => ({ ...h, type: 'Check-in' })),
+      ...hotelCheckOuts.map(h => ({ ...h, type: 'Check-out' })),
+    ];
+
+    const html = `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Daily Report (Printable)</title>
+          <style>${style}</style>
+        </head>
+        <body>
+          <h1>Daily Activity Report</h1>
+          <div class="meta">
+            Generated on ${new Date().toLocaleString()} | Date: ${selectedDate} | Time: ${startTime} - ${endTime}
+          </div>
+
+          <div class="section">
+            <h2>Group Bookings (${groupReport.length})</h2>
+            <div class="meta">Range: ${groupStart} → ${groupEnd} | Status: ${groupStatus || 'All'}</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Group</th>
+                  <th>Status</th>
+                  <th>Pax</th>
+                  <th>Arrival</th>
+                  <th>Departure</th>
+                  <th>Leader</th>
+                  <th>Contact</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${groupReport.map(g => `
+                  <tr>
+                    <td>${g.group_name}</td>
+                    <td>${g.status}</td>
+                    <td class="nowrap">${g.total_members}</td>
+                    <td>
+                      <div>${g.arrival_date || g.tour_start_date || ''}</div>
+                      <div class="muted">${[g.arrival_flight_number, g.arrival_flight_time].filter(Boolean).join(' ')}</div>
+                    </td>
+                    <td>
+                      <div>${g.departure_date || g.tour_end_date || ''}</div>
+                      <div class="muted">${[g.departure_flight_number, g.departure_flight_time].filter(Boolean).join(' ')}</div>
+                    </td>
+                    <td>${g.leader_name || ''}</td>
+                    <td>
+                      <div>${g.leader_email || ''}</div>
+                      <div>${g.leader_phone || ''}</div>
+                    </td>
+                    <td>${g.group_notes || ''}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section">
+            <h2>Transport (Arrivals + Departures): ${transportRows.length}</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Passengers</th>
+                  <th>Vehicle</th>
+                  <th>Driver</th>
+                  <th>Pickup Time</th>
+                  <th>From</th>
+                  <th>To</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${transportRows.map(t => `
+                  <tr>
+                    <td>${t.type}</td>
+                    <td>${formatPassengerNames(t.passengers)}</td>
+                    <td>${t.vehicle_number || 'N/A'}</td>
+                    <td>${t.driver_name || 'N/A'}</td>
+                    <td class="nowrap">${new Date(t.pickup_time).toLocaleString()}</td>
+                    <td>${t.pickup_location}</td>
+                    <td>${t.dropoff_location}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section">
+            <h2>Activities Today: ${activities.length}</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Activity</th>
+                  <th>Guide</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${activities.map(a => `
+                  <tr>
+                    <td>${a.activity_name || 'N/A'}</td>
+                    <td>${a.guide_name || 'N/A'}</td>
+                    <td>${a.scheduled_date}</td>
+                    <td>${a.scheduled_time}</td>
+                    <td>${a.status || 'scheduled'}</td>
+                    <td>${a.notes || ''}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section">
+            <h2>Hotels (Check-ins + Check-outs): ${hotelsRows.length}</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Guest</th>
+                  <th>Group</th>
+                  <th>Hotel</th>
+                  <th>Room</th>
+                  <th>Check-in</th>
+                  <th>Check-out</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${hotelsRows.map(h => `
+                  <tr>
+                    <td>${h.type}</td>
+                    <td>${h.guest_name}</td>
+                    <td>${h.group_name || ''}</td>
+                    <td>${h.hotel_name || h.hotel_id}</td>
+                    <td>${h.room_number || ''}</td>
+                    <td>${h.check_in_date}</td>
+                    <td>${h.check_out_date}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   const handleExportToExcel = () => {
     const wb = XLSX.utils.book_new();
 
