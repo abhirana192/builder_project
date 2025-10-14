@@ -162,6 +162,20 @@ CREATE TABLE IF NOT EXISTS activity_instances (
     FOREIGN KEY (guide_id) REFERENCES staff(id)
 );
 
+-- Activity participants (proper relation)
+CREATE TABLE IF NOT EXISTS activity_participants (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    activity_instance_id INTEGER NOT NULL,
+    guest_id INTEGER NOT NULL,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(activity_instance_id, guest_id),
+    FOREIGN KEY (activity_instance_id) REFERENCES activity_instances(id) ON DELETE CASCADE,
+    FOREIGN KEY (guest_id) REFERENCES guests(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_participants_instance ON activity_participants(activity_instance_id);
+CREATE INDEX IF NOT EXISTS idx_activity_participants_guest ON activity_participants(guest_id);
+
 -- Hotels
 CREATE TABLE IF NOT EXISTS hotels (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
