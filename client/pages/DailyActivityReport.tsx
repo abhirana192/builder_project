@@ -467,10 +467,16 @@ const DailyActivityReport: React.FC = () => {
             <Button onClick={fetchReportData} variant="secondary">Apply</Button>
           </div>
         </div>
-        <Button onClick={handleExportToExcel} disabled={loading || (arrivals.length + departures.length + activities.length + hotelCheckIns.length + hotelCheckOuts.length + groupReport.length === 0)}>
-          <Download className="mr-2 h-4 w-4" />
-          Export to Excel
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handlePrintReport} variant="outline" disabled={loading || (arrivals.length + departures.length + activities.length + hotelCheckIns.length + hotelCheckOuts.length + groupReport.length === 0)}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print Report
+          </Button>
+          <Button onClick={handleExportToExcel} disabled={loading || (arrivals.length + departures.length + activities.length + hotelCheckIns.length + hotelCheckOuts.length + groupReport.length === 0)}>
+            <Download className="mr-2 h-4 w-4" />
+            Export to Excel
+          </Button>
+        </div>
       </div>
 
       <Card>
