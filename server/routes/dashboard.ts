@@ -13,7 +13,30 @@ export const getDashboardStats: RequestHandler = (req, res) => {
 
 export const getTodaysArrivals: RequestHandler = (req, res) => {
   try {
-    const arrivals = queries.getTodaysArrivals().all() as any[];
+    const { date, startTime, endTime } = req.query as { date?: string; startTime?: string; endTime?: string };
+
+    let sql = `
+      SELECT gts.*, v.vehicle_number, v.vehicle_type, s.first_name || ' ' || s.last_name as driver_name
+      FROM group_transport_schedules gts
+      JOIN vehicles v ON gts.vehicle_id = v.id
+      JOIN staff s ON gts.driver_id = s.id
+      WHERE (LOWER(gts.transport_type) = 'airport_pickup' OR LOWER(gts.pickup_location) LIKE '%airport%')
+    `;
+    const params: any[] = [];
+
+    if (date) {
+      sql += " AND DATE(gts.pickup_time) = DATE(?)";
+      params.push(date);
+    } else {
+      sql += " AND DATE(gts.pickup_time) = DATE('now')";
+    }
+    if (startTime && endTime) {
+      sql += " AND TIME(gts.pickup_time) BETWEEN TIME(?) AND TIME(?)";
+      params.push(startTime, endTime);
+    }
+    sql += " ORDER BY gts.pickup_time";
+
+    const arrivals = queries.getDatabase().prepare(sql).all(...params) as any[];
     const detailedArrivals = arrivals.map(arrival => {
       if (arrival.groups_data) {
         try {
@@ -54,7 +77,30 @@ export const getTodaysArrivals: RequestHandler = (req, res) => {
 
 export const getTodaysDepartures: RequestHandler = (req, res) => {
   try {
-    const departures = queries.getTodaysDepartures().all() as any[];
+    const { date, startTime, endTime } = req.query as { date?: string; startTime?: string; endTime?: string };
+
+    let sql = `
+      SELECT gts.*, v.vehicle_number, v.vehicle_type, s.first_name || ' ' || s.last_name as driver_name
+      FROM group_transport_schedules gts
+      JOIN vehicles v ON gts.vehicle_id = v.id
+      JOIN staff s ON gts.driver_id = s.id
+      WHERE (LOWER(gts.transport_type) = 'airport_dropoff' OR LOWER(gts.dropoff_location) LIKE '%airport%')
+    `;
+    const params: any[] = [];
+
+    if (date) {
+      sql += " AND DATE(gts.pickup_time) = DATE(?)";
+      params.push(date);
+    } else {
+      sql += " AND DATE(gts.pickup_time) = DATE('now')";
+    }
+    if (startTime && endTime) {
+      sql += " AND TIME(gts.pickup_time) BETWEEN TIME(?) AND TIME(?)";
+      params.push(startTime, endTime);
+    }
+    sql += " ORDER BY gts.pickup_time";
+
+    const departures = queries.getDatabase().prepare(sql).all(...params) as any[];
     const detailedDepartures = departures.map(departure => {
       if (departure.groups_data) {
         try {
