@@ -383,10 +383,28 @@ const DailyActivityReport: React.FC = () => {
             <Button onClick={fetchReportData} variant="secondary">Apply</Button>
           </div>
         </div>
-        <Button onClick={handlePrintReport} variant="outline" disabled={loading || (arrivals.length + departures.length + activities.length + hotelCheckIns.length + hotelCheckOuts.length + groupReport.length === 0)}>
-          <Printer className="mr-2 h-4 w-4" />
-          Print Report
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={handlePrintReport} variant="outline" disabled={loading || (arrivals.length + departures.length + activities.length + hotelCheckIns.length + hotelCheckOuts.length + groupReport.length === 0)}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print All
+          </Button>
+          <Button onClick={handlePrintGroups} variant="outline" disabled={groupReport.length === 0}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print Groups
+          </Button>
+          <Button onClick={handlePrintTransportOnly} variant="outline" disabled={(arrivals.length + departures.length) === 0}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print Transport
+          </Button>
+          <Button onClick={handlePrintActivitiesOnly} variant="outline" disabled={activities.length === 0}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print Activities
+          </Button>
+          <Button onClick={handlePrintHotelsOnly} variant="outline" disabled={(hotelCheckIns.length + hotelCheckOuts.length) === 0}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print Hotels
+          </Button>
+        </div>
       </div>
 
       <Card>
