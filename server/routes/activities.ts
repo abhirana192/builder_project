@@ -98,7 +98,20 @@ export const getTodaysActivityInstances: RequestHandler = (req, res) => {
 
     sql += " ORDER BY ai.scheduled_time ASC";
 
-    const instances = queries.getDatabase().prepare(sql).all(...params) as any[];
+    const db = queries.getDatabase();
+    const instances = db.prepare(sql).all(...params) as any[];
+
+    // Build map of guest_id -> hotel name for the day
+    const hotelRows = db.prepare(`
+      SELECT hb.guest_id as id, h.name as hotel_name
+      FROM hotel_bookings hb
+      JOIN hotels h ON h.id = hb.hotel_id
+      WHERE DATE(?) BETWEEN DATE(hb.check_in_date) AND DATE(hb.check_out_date)
+        AND hb.status IN ('confirmed','checked_in')
+        AND hb.guest_id IS NOT NULL
+    `).all(filterDate) as Array<{ id: number; hotel_name: string }>;
+    const guestHotelMap = new Map<number, string>();
+    for (const r of hotelRows) guestHotelMap.set(r.id, r.hotel_name);
 
     const enrichWithParticipants = (activityName: string) => {
       const schedules = queries.getDatabase().prepare(`
@@ -162,12 +175,13 @@ export const getTodaysActivityInstances: RequestHandler = (req, res) => {
           name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
           groupName: p.group_name || undefined,
           groupId: p.group_id ?? null,
+          location: guestHotelMap.get(p.id) || null,
         }));
       } catch {}
 
       // 2) Secondary: transport-linked participants (if none persisted)
       if (!participants || participants.length === 0) {
-        participants = inst.activity_name ? enrichWithParticipants(inst.activity_name).map(p => ({ id: p.id, name: p.name, groupName: p.groupName, groupId: p.groupId })) : [];
+        participants = inst.activity_name ? enrichWithParticipants(inst.activity_name).map(p => ({ id: p.id, name: p.name, groupName: p.groupName, groupId: p.groupId, location: guestHotelMap.get(p.id) || null })) : [];
       }
 
       // Fallback: if no transport-linked participants, derive from booking's guest group
@@ -186,14 +200,13 @@ export const getTodaysActivityInstances: RequestHandler = (req, res) => {
                 name: `${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Unknown Member',
                 groupName: group?.group_name || memberInfo?.group_name || 'Unknown Group',
                 groupId: groupId,
-                pickups: [],
-                dropoffs: [],
+                location: guestHotelMap.get(m.id) || null,
               }));
             } else {
               // Single guest fallback
               const g = queries.getGuestById().get(guestId) as { first_name?: string; last_name?: string } | undefined;
               if (g) {
-                participants = [{ id: guestId, name: `${g.first_name || ''} ${g.last_name || ''}`.trim() || 'Unknown Guest', groupName: memberInfo?.group_name || '', groupId: memberInfo?.group_id ?? null, pickups: [], dropoffs: [] }];
+                participants = [{ id: guestId, name: `${g.first_name || ''} ${g.last_name || ''}`.trim() || 'Unknown Guest', groupName: memberInfo?.group_name || '', groupId: memberInfo?.group_id ?? null, location: guestHotelMap.get(guestId) || null }];
               }
             }
 
