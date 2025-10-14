@@ -1637,6 +1637,11 @@ export default function GroupBookings() {
                     <div className="flex items-center gap-2 mt-1">
                       <Badge variant={getGroupTypeColor(selectedGroup.group_type)}>{selectedGroup.group_type}</Badge>
                       <Badge variant={getStatusColor(selectedGroup.status)}>{selectedGroup.status}</Badge>
+                      {selectedGroup.bookings && selectedGroup.bookings.length > 0 && (
+                        <Badge variant="outline">
+                          Invoice #{selectedGroup.bookings[0]?.invoice_number || '—'}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <div className="text-right">
