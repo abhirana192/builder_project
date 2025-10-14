@@ -153,7 +153,22 @@ export const getTodaysActivityInstances: RequestHandler = (req, res) => {
     };
 
     const detailed = instances.map(inst => {
-      let participants = inst.activity_name ? enrichWithParticipants(inst.activity_name) : [];
+      // 1) Primary source: persisted activity participants
+      let participants = [] as Array<{ id: number; name: string; groupName?: string; groupId?: number | null }>;
+      try {
+        const persisted = queries.getParticipantsForActivityInstance().all(inst.id) as Array<{ id: number; first_name?: string; last_name?: string; group_id?: number | null; group_name?: string }>;
+        participants = persisted.map(p => ({
+          id: p.id,
+          name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
+          groupName: p.group_name || undefined,
+          groupId: p.group_id ?? null,
+        }));
+      } catch {}
+
+      // 2) Secondary: transport-linked participants (if none persisted)
+      if (!participants || participants.length === 0) {
+        participants = inst.activity_name ? enrichWithParticipants(inst.activity_name).map(p => ({ id: p.id, name: p.name, groupName: p.groupName, groupId: p.groupId })) : [];
+      }
 
       // Fallback: if no transport-linked participants, derive from booking's guest group
       if ((!participants || participants.length === 0) && inst.booking_id) {
@@ -580,22 +595,34 @@ export const takeAttendance: RequestHandler = (req, res) => {
 export const addParticipantsToActivity: RequestHandler = (req, res) => {
   try {
     const { id } = req.params;
-    const { participant_ids } = req.body;
+    const { participant_ids } = req.body as { participant_ids?: number[] };
 
     console.log("Adding participants to activity instance:", id);
     console.log("Participant IDs:", participant_ids);
 
-    // For now, we'll just update the attendance count
-    // In a full implementation, you'd want to create a separate table for activity participants
-    const participantCount = participant_ids ? participant_ids.length : 0;
+    const db = queries.getDatabase();
+    const insert = queries.addParticipantToActivity();
 
-    queries.getDatabase().prepare(`
-      UPDATE activity_instances SET
-        attendance_count = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(participantCount, id);
+    db.prepare('BEGIN').run();
+    try {
+      for (const pid of participant_ids || []) {
+        insert.run(id, pid);
+      }
+      // Update attendance_count from persisted participants
+      const countRow = db.prepare('SELECT COUNT(*) as c FROM activity_participants WHERE activity_instance_id = ?').get(id) as { c: number };
+      db.prepare(`
+        UPDATE activity_instances SET
+          attendance_count = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(countRow.c || 0, id);
+      db.prepare('COMMIT').run();
+    } catch (e) {
+      db.prepare('ROLLBACK').run();
+      throw e;
+    }
 
-    const updatedInstance = queries.getDatabase().prepare(`
+    // Return the updated instance (callers that need participants should refetch /today)
+    const updatedInstance = db.prepare(`
       SELECT
         ai.*,
         a.name as activity_name,
