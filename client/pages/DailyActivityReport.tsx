@@ -719,6 +719,7 @@ const DailyActivityReport: React.FC = () => {
                 name: p.name,
                 group: p.groupName || '',
                 groupId: p.groupId ?? '',
+                location: p.location || null,
               }));
               return (
                 <div key={`act-${a.id}`} className="border rounded-md">
