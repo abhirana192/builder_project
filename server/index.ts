@@ -194,8 +194,9 @@ export function createServer() {
   app.get("/api/hotels/checkins/today", getHotelCheckInsToday);
   app.get("/api/hotels/checkouts/today", getHotelCheckOutsToday);
 
-  // Daily Activity Report route
+  // Reports routes
   app.get("/api/reports/daily-activity", getDailyActivityReport);
+  app.get("/api/reports/group-bookings", getGroupBookingsReport);
 
   // Staff routes
   app.get("/api/staff", getAllStaff);
