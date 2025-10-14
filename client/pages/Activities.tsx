@@ -275,6 +275,10 @@ export default function Activities() {
 
   const handleScheduleActivity = async () => {
     try {
+      if (dbReadOnly) {
+        toast({ title: 'Read-only database', description: 'Cannot schedule activities because the database is in read-only mode.', variant: 'destructive' });
+        return;
+      }
       console.log('=== FORM VALIDATION ===');
       console.log('Form data:', scheduleForm);
 
