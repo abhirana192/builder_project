@@ -743,6 +743,7 @@ const DailyActivityReport: React.FC = () => {
                           <TableHead>Participant</TableHead>
                           <TableHead>Group</TableHead>
                           <TableHead>Group ID</TableHead>
+                          <TableHead>Location</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -752,11 +753,12 @@ const DailyActivityReport: React.FC = () => {
                               <TableCell className="font-medium">{row.name}</TableCell>
                               <TableCell>{row.group}</TableCell>
                               <TableCell>{row.groupId || '—'}</TableCell>
+                              <TableCell>{row.location || 'NULL'}</TableCell>
                             </TableRow>
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={3} className="text-sm text-muted-foreground">No participants for this activity.</TableCell>
+                            <TableCell colSpan={4} className="text-sm text-muted-foreground">No participants for this activity.</TableCell>
                           </TableRow>
                         )}
                       </TableBody>
