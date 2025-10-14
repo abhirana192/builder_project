@@ -181,6 +181,34 @@ export const getTodaysActivityInstances: RequestHandler = (req, res) => {
                 participants = [{ id: guestId, name: `${g.first_name || ''} ${g.last_name || ''}`.trim() || 'Unknown Guest', groupName: memberInfo?.group_name || '', groupId: memberInfo?.group_id ?? null, pickups: [], dropoffs: [] }];
               }
             }
+
+            // Augment pickups/dropoffs from ANY schedule on that date containing this group/member
+            try {
+              const schedules = queries.getDatabase().prepare(`
+                SELECT * FROM group_transport_schedules WHERE DATE(pickup_time) = DATE(?)
+              `).all(inst.scheduled_date) as any[];
+              const addLoc = (arr: string[], val?: string | null) => { const v = (val || '').trim(); if (v && !arr.includes(v)) arr.push(v); };
+              const includes = (json: string, gid?: number | null, mid?: number) => {
+                try {
+                  const arr = JSON.parse(json || '[]');
+                  for (const p of arr) {
+                    if (p?.type === 'group' && gid && p.id === gid) return true;
+                    if (p?.type === 'member' && mid && p.id === mid) return true;
+                  }
+                } catch {}
+                return false;
+              };
+              for (const p of participants) {
+                for (const sch of schedules) {
+                  if (includes(sch.groups_data, p.groupId ?? null, p.id)) {
+                    addLoc(p.pickups, sch.pickup_location);
+                    addLoc(p.dropoffs, sch.dropoff_location);
+                  }
+                }
+              }
+            } catch (e2) {
+              console.warn('Pickup/dropoff augmentation failed for activity instance', inst.id, e2);
+            }
           }
         } catch (e) {
           console.warn('Fallback participants resolution failed for activity instance', inst.id, e);
