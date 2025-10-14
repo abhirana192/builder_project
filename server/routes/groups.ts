@@ -1021,7 +1021,7 @@ export const removeMemberFromGroup: RequestHandler = (req, res) => {
     const { groupId, memberId } = req.params;
 
     queries.removeGroupMember().run(groupId, memberId);
-    
+
     // Update group member count
     const memberCount = queries.getGroupMemberCount().get(groupId) as { count: number };
     queries.updateGroupMemberCount().run(memberCount.count, groupId);
@@ -1030,5 +1030,23 @@ export const removeMemberFromGroup: RequestHandler = (req, res) => {
   } catch (error) {
     console.error("Error removing member from group:", error);
     res.status(500).json({ error: "Failed to remove member from group" });
+  }
+};
+
+export const getGroupBookingsReport: RequestHandler = (req, res) => {
+  try {
+    const { start, end, status } = req.query as { start?: string; end?: string; status?: string };
+
+    const today = new Date().toISOString().slice(0, 10);
+    const startDate = (start && String(start)) || today;
+    const endDate = (end && String(end)) || today;
+    const statusFilter = status ? String(status) : null;
+
+    const groups = queries.getGroupsReportInRange().all(endDate, startDate, statusFilter, statusFilter);
+
+    res.json(groups || []);
+  } catch (error) {
+    console.error("Error generating group bookings report:", error);
+    res.status(500).json({ error: "Failed to generate group bookings report" });
   }
 };
