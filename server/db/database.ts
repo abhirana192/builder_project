@@ -507,6 +507,29 @@ export const queries = {
     WHERE gm.id = ?
   `),
   
+  // Activity participants queries
+  getParticipantsForActivityInstance: () => getDatabase().prepare(`
+    SELECT
+      ap.guest_id as id,
+      g.first_name,
+      g.last_name,
+      tg.id as group_id,
+      tg.group_name
+    FROM activity_participants ap
+    JOIN guests g ON g.id = ap.guest_id
+    LEFT JOIN group_members gm ON gm.guest_id = g.id
+    LEFT JOIN tour_groups tg ON tg.id = gm.group_id
+    WHERE ap.activity_instance_id = ?
+    ORDER BY g.last_name, g.first_name
+  `),
+  addParticipantToActivity: () => getDatabase().prepare(`
+    INSERT OR IGNORE INTO activity_participants (activity_instance_id, guest_id)
+    VALUES (?, ?)
+  `),
+  removeParticipantFromActivity: () => getDatabase().prepare(`
+    DELETE FROM activity_participants WHERE activity_instance_id = ? AND guest_id = ?
+  `),
+
   // Hotel queries
   getAllHotels: () => getDatabase().prepare('SELECT * FROM hotels ORDER BY name'),
   getHotelById: () => getDatabase().prepare('SELECT * FROM hotels WHERE id = ?'),
