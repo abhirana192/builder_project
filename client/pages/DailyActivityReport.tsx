@@ -418,6 +418,7 @@ const DailyActivityReport: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Group ID</TableHead>
                   <TableHead>Group</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Pax</TableHead>
@@ -425,6 +426,7 @@ const DailyActivityReport: React.FC = () => {
                   <TableHead>Departure</TableHead>
                   <TableHead>Leader</TableHead>
                   <TableHead>Contact</TableHead>
+                  <TableHead>Members</TableHead>
                   <TableHead>Notes</TableHead>
                 </TableRow>
               </TableHeader>
