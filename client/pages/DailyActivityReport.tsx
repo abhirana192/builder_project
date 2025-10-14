@@ -200,6 +200,7 @@ const DailyActivityReport: React.FC = () => {
               <tbody>
                 ${groupReport.map(g => `
                   <tr>
+                    <td>${g.id}</td>
                     <td>${g.group_name}</td>
                     <td>${g.status}</td>
                     <td class="nowrap">${g.total_members}</td>
@@ -216,6 +217,7 @@ const DailyActivityReport: React.FC = () => {
                       <div>${g.leader_email || ''}</div>
                       <div>${g.leader_phone || ''}</div>
                     </td>
+                    <td>${g.member_names || ''}</td>
                     <td>${g.group_notes || ''}</td>
                   </tr>
                 `).join('')}
