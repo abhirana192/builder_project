@@ -87,6 +87,7 @@ const DailyActivityReport: React.FC = () => {
   const [hotelCheckOuts, setHotelCheckOuts] = useState<HotelBookingToday[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dbReadOnly, setDbReadOnly] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [startTime, setStartTime] = useState<string>('00:00');
