@@ -71,10 +71,11 @@ export const getActivityInstances: RequestHandler = (req, res) => {
 
 export const getTodaysActivityInstances: RequestHandler = (req, res) => {
   try {
-    // Get today's date in YYYY-MM-DD format based on local timezone
-    const today = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
-    const instances = queries.getDatabase().prepare(`
-      SELECT 
+    const { date, startTime, endTime } = req.query as { date?: string; startTime?: string; endTime?: string };
+    const filterDate = date || new Date().toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
+
+    let sql = `
+      SELECT
         ai.*,
         a.name as activity_name,
         a.max_participants,
@@ -85,8 +86,17 @@ export const getTodaysActivityInstances: RequestHandler = (req, res) => {
       LEFT JOIN bookings b ON ai.booking_id = b.id
       LEFT JOIN staff s ON ai.guide_id = s.id
       WHERE ai.scheduled_date = ?
-      ORDER BY ai.scheduled_time ASC
-    `).all(today);
+    `;
+    const params: any[] = [filterDate];
+
+    if (startTime && endTime) {
+      sql += " AND ai.scheduled_time BETWEEN ? AND ?";
+      params.push(startTime, endTime);
+    }
+
+    sql += " ORDER BY ai.scheduled_time ASC";
+
+    const instances = queries.getDatabase().prepare(sql).all(...params);
     res.json(instances);
   } catch (error) {
     console.error("Error fetching today's activity instances:", error);
