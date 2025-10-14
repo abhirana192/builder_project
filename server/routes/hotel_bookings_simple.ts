@@ -216,13 +216,15 @@ export const getGuestWithGroup: RequestHandler = (req, res) => {
 
 export const getHotelCheckInsToday: RequestHandler = (req, res) => {
   try {
-    const results = queries.getDatabase().prepare(`
+    const { date } = req.query as { date?: string };
+    const sql = `
       SELECT hb.*, h.name AS hotel_name
       FROM hotel_bookings hb
       JOIN hotels h ON hb.hotel_id = h.id
-      WHERE DATE(hb.check_in_date) = DATE('now')
+      WHERE DATE(hb.check_in_date) = DATE(?)
       ORDER BY h.name, hb.guest_name
-    `).all();
+    `;
+    const results = queries.getDatabase().prepare(sql).all(date || new Date().toISOString().slice(0, 10));
     res.json(results);
   } catch (error) {
     console.error("Error fetching today's hotel check-ins:", error);
@@ -232,13 +234,15 @@ export const getHotelCheckInsToday: RequestHandler = (req, res) => {
 
 export const getHotelCheckOutsToday: RequestHandler = (req, res) => {
   try {
-    const results = queries.getDatabase().prepare(`
+    const { date } = req.query as { date?: string };
+    const sql = `
       SELECT hb.*, h.name AS hotel_name
       FROM hotel_bookings hb
       JOIN hotels h ON hb.hotel_id = h.id
-      WHERE DATE(hb.check_out_date) = DATE('now')
+      WHERE DATE(hb.check_out_date) = DATE(?)
       ORDER BY h.name, hb.guest_name
-    `).all();
+    `;
+    const results = queries.getDatabase().prepare(sql).all(date || new Date().toISOString().slice(0, 10));
     res.json(results);
   } catch (error) {
     console.error("Error fetching today's hotel check-outs:", error);
