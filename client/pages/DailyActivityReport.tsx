@@ -3,8 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Download, Plane, AlertTriangle, CalendarCheck, Hotel, Users, Printer } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import { Plane, AlertTriangle, CalendarCheck, Hotel, Users, Printer } from 'lucide-react';
 import { fetchJSON } from '@/lib/fetch-utils';
 
 interface TransportSchedule {
@@ -319,94 +318,6 @@ const DailyActivityReport: React.FC = () => {
     printWindow.print();
   };
 
-  const handleExportToExcel = () => {
-    const wb = XLSX.utils.book_new();
-
-    const transportArrivals = arrivals.map(item => ({
-      Type: 'Arrival',
-      Passengers: formatPassengerNames(item.passengers),
-      Vehicle: item.vehicle_number || 'N/A',
-      Driver: item.driver_name || 'N/A',
-      'Pickup Time': new Date(item.pickup_time).toLocaleString(),
-      From: item.pickup_location,
-      To: item.dropoff_location,
-    }));
-    const transportDepartures = departures.map(item => ({
-      Type: 'Departure',
-      Passengers: formatPassengerNames(item.passengers),
-      Vehicle: item.vehicle_number || 'N/A',
-      Driver: item.driver_name || 'N/A',
-      'Pickup Time': new Date(item.pickup_time).toLocaleString(),
-      From: item.pickup_location,
-      To: item.dropoff_location,
-    }));
-
-    const activitiesSheet = activities.map(a => ({
-      Activity: a.activity_name || 'N/A',
-      Guide: a.guide_name || 'N/A',
-      Date: a.scheduled_date,
-      Time: a.scheduled_time,
-      Status: a.status || 'scheduled',
-      Notes: a.notes || '',
-    }));
-
-    const hotelCheckInsSheet = hotelCheckIns.map(h => ({
-      Type: 'Check-in',
-      Guest: h.guest_name,
-      Group: h.group_name || '',
-      Hotel: h.hotel_name || h.hotel_id,
-      Room: h.room_number || '',
-      'Check-in Date': h.check_in_date,
-      'Check-out Date': h.check_out_date,
-      Guests: h.guests_count || 1,
-    }));
-
-    const hotelCheckOutsSheet = hotelCheckOuts.map(h => ({
-      Type: 'Check-out',
-      Guest: h.guest_name,
-      Group: h.group_name || '',
-      Hotel: h.hotel_name || h.hotel_id,
-      Room: h.room_number || '',
-      'Check-in Date': h.check_in_date,
-      'Check-out Date': h.check_out_date,
-      Guests: h.guests_count || 1,
-    }));
-
-    const groupBookingsSheet = groupReport.map(g => ({
-      Group: g.group_name,
-      Status: g.status,
-      Pax: g.total_members,
-      'Tour Start': g.tour_start_date || '',
-      'Tour End': g.tour_end_date || '',
-      'Arrival Date': g.arrival_date || '',
-      'Arrival Flight': g.arrival_flight_number || '',
-      'Arrival Time': g.arrival_flight_time || '',
-      'Departure Date': g.departure_date || '',
-      'Departure Flight': g.departure_flight_number || '',
-      'Departure Time': g.departure_flight_time || '',
-      'Leader Name': g.leader_name || '',
-      'Leader Email': g.leader_email || '',
-      'Leader Phone': g.leader_phone || '',
-      Notes: g.group_notes || ''
-    }));
-
-    const sheets = [
-      { name: 'Transport Arrivals', data: transportArrivals },
-      { name: 'Transport Departures', data: transportDepartures },
-      { name: 'Activities Today', data: activitiesSheet },
-      { name: 'Hotel Check-ins', data: hotelCheckInsSheet },
-      { name: 'Hotel Check-outs', data: hotelCheckOutsSheet },
-      { name: 'Group Bookings', data: groupBookingsSheet },
-    ];
-
-    sheets.forEach(({ name, data }) => {
-      const ws = XLSX.utils.json_to_sheet(data);
-      XLSX.utils.book_append_sheet(wb, ws, name);
-    });
-
-    const today = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(wb, `Jiguang_Tour_Daily_Report_${today}.xlsx`);
-  };
 
   if (loading) {
     return (
@@ -467,16 +378,10 @@ const DailyActivityReport: React.FC = () => {
             <Button onClick={fetchReportData} variant="secondary">Apply</Button>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handlePrintReport} variant="outline" disabled={loading || (arrivals.length + departures.length + activities.length + hotelCheckIns.length + hotelCheckOuts.length + groupReport.length === 0)}>
-            <Printer className="mr-2 h-4 w-4" />
-            Print Report
-          </Button>
-          <Button onClick={handleExportToExcel} disabled={loading || (arrivals.length + departures.length + activities.length + hotelCheckIns.length + hotelCheckOuts.length + groupReport.length === 0)}>
-            <Download className="mr-2 h-4 w-4" />
-            Export to Excel
-          </Button>
-        </div>
+        <Button onClick={handlePrintReport} variant="outline" disabled={loading || (arrivals.length + departures.length + activities.length + hotelCheckIns.length + hotelCheckOuts.length + groupReport.length === 0)}>
+          <Printer className="mr-2 h-4 w-4" />
+          Print Report
+        </Button>
       </div>
 
       <Card>
