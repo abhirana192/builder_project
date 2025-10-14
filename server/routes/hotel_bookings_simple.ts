@@ -114,8 +114,8 @@ export const createHotelBooking: RequestHandler = (req, res) => {
     const result = queries.getDatabase().prepare(`
       INSERT INTO hotel_bookings (
         guest_name, guest_id, group_name, hotel_id, room_number, room_type, check_in_date, check_out_date,
-        guests_count, rate_per_night, total_amount, special_requests, status, booking_reference
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?)
+        guests_count, rate_per_night, total_amount, special_requests, status, booking_reference, actual_check_in
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'checked_in', ?, datetime('now'))
     `).run(
       guest_name,
       guest_id || null,
