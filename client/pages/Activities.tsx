@@ -169,6 +169,19 @@ export default function Activities() {
 
   useEffect(() => {
     fetchData();
+
+    // Check DB status
+    (async () => {
+      try {
+        const res = await fetch('/api/db/status');
+        if (res.ok) {
+          const data = await res.json();
+          setDbReadOnly(!!data.readOnly);
+        }
+      } catch (e) {
+        console.warn('Could not fetch DB status', e);
+      }
+    })();
   }, []);
 
   const fetchData = async () => {
