@@ -433,6 +433,7 @@ const DailyActivityReport: React.FC = () => {
               <TableBody>
                 {groupReport.map(g => (
                   <TableRow key={g.id}>
+                    <TableCell className="text-xs text-muted-foreground">{g.id}</TableCell>
                     <TableCell className="font-medium">{g.group_name}</TableCell>
                     <TableCell>{g.status}</TableCell>
                     <TableCell>{g.total_members}</TableCell>
@@ -455,6 +456,7 @@ const DailyActivityReport: React.FC = () => {
                         <div>{g.leader_phone || ''}</div>
                       </div>
                     </TableCell>
+                    <TableCell className="max-w-[320px] truncate" title={g.member_names || ''}>{g.member_names || ''}</TableCell>
                     <TableCell className="max-w-[240px] truncate" title={g.group_notes || ''}>{g.group_notes || ''}</TableCell>
                   </TableRow>
                 ))}
