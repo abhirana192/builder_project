@@ -300,8 +300,6 @@ const DailyActivityReport: React.FC = () => {
               name: p.name,
               group: p.groupName || '',
               groupId: p.groupId || '',
-              pickups: (p.pickups || []).join(', '),
-              dropoffs: (p.dropoffs || []).join(', '),
             }));
             return `
             <div style="margin: 12px 0;">
@@ -313,8 +311,6 @@ const DailyActivityReport: React.FC = () => {
                     <th>Participant</th>
                     <th>Group</th>
                     <th>Group ID</th>
-                    <th>Pickup(s)</th>
-                    <th>Dropoff(s)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -323,11 +319,9 @@ const DailyActivityReport: React.FC = () => {
                       <td>${r.name}</td>
                       <td>${r.group}</td>
                       <td>${r.groupId || '—'}</td>
-                      <td>${r.pickups || '—'}</td>
-                      <td>${r.dropoffs || '—'}</td>
                     </tr>
                   `).join('') : `
-                    <tr><td colspan="5" class="muted">No participants linked via transport schedules.</td></tr>
+                    <tr><td colspan="3" class="muted">No participants for this activity.</td></tr>
                   `}
                 </tbody>
               </table>
@@ -715,7 +709,7 @@ const DailyActivityReport: React.FC = () => {
             <CalendarCheck className="h-5 w-5 text-emerald-600" />
             Activities Today: {activities.length}
           </CardTitle>
-          <CardDescription>Each activity includes a participant list with group and pickup/dropoff info.</CardDescription>
+          <CardDescription>Each activity includes a participant list with group info.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {activities.length > 0 ? (
@@ -726,8 +720,6 @@ const DailyActivityReport: React.FC = () => {
                 name: p.name,
                 group: p.groupName || '',
                 groupId: p.groupId ?? '',
-                pickups: (p.pickups || []).join(', '),
-                dropoffs: (p.dropoffs || []).join(', '),
               }));
               return (
                 <div key={`act-${a.id}`} className="border rounded-md">
@@ -751,8 +743,6 @@ const DailyActivityReport: React.FC = () => {
                           <TableHead>Participant</TableHead>
                           <TableHead>Group</TableHead>
                           <TableHead>Group ID</TableHead>
-                          <TableHead>Pickup Location(s)</TableHead>
-                          <TableHead>Dropoff Location(s)</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -762,13 +752,11 @@ const DailyActivityReport: React.FC = () => {
                               <TableCell className="font-medium">{row.name}</TableCell>
                               <TableCell>{row.group}</TableCell>
                               <TableCell>{row.groupId || '—'}</TableCell>
-                              <TableCell className="max-w-[320px] truncate" title={row.pickups}>{row.pickups || '—'}</TableCell>
-                              <TableCell className="max-w-[320px] truncate" title={row.dropoffs}>{row.dropoffs || '—'}</TableCell>
                             </TableRow>
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={5} className="text-sm text-muted-foreground">No participants linked via transport schedules.</TableCell>
+                            <TableCell colSpan={3} className="text-sm text-muted-foreground">No participants for this activity.</TableCell>
                           </TableRow>
                         )}
                       </TableBody>
