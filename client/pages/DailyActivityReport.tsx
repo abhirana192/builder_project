@@ -97,12 +97,13 @@ const DailyActivityReport: React.FC = () => {
         params.set('endTime', endTime);
       }
 
-      const [arrivalsData, departuresData, activitiesData, checkInsData, checkOutsData] = await Promise.all([
+      const [arrivalsData, departuresData, activitiesData, checkInsData, checkOutsData, groupReportData] = await Promise.all([
         fetchJSON(`/api/dashboard/arrivals?${params.toString()}`),
         fetchJSON(`/api/dashboard/departures?${params.toString()}`),
         fetchJSON(`/api/activities/today?${params.toString()}`).catch(() => []),
         fetchJSON(`/api/hotels/checkins/today?${params.toString()}`).catch(() => []),
         fetchJSON(`/api/hotels/checkouts/today?${params.toString()}`).catch(() => []),
+        fetchJSON(`/api/reports/group-bookings?start=${groupStart}&end=${groupEnd}&status=${encodeURIComponent(groupStatus)}`).catch(() => []),
       ]);
 
       setArrivals(Array.isArray(arrivalsData) ? arrivalsData : []);
