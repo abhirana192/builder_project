@@ -615,6 +615,12 @@ export const queries = {
       tg.departure_flight_number,
       tg.departure_flight_time,
       tg.group_notes,
+      (
+        SELECT GROUP_CONCAT(gu.first_name || ' ' || gu.last_name, ', ')
+        FROM group_members gm
+        JOIN guests gu ON gm.guest_id = gu.id
+        WHERE gm.group_id = tg.id
+      ) AS member_names,
       g.first_name || ' ' || g.last_name AS leader_name,
       g.email AS leader_email,
       g.phone AS leader_phone
