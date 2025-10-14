@@ -3,10 +3,10 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Download, Plane, AlertTriangle } from 'lucide-react';
+import { Download, Plane, AlertTriangle, CalendarCheck, Hotel, Activity } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { fetchJSON } from '@/lib/fetch-utils';
 
-// This interface should match the data from your API
 interface TransportSchedule {
   id: number;
   transport_type: string;
@@ -24,9 +24,36 @@ interface TransportSchedule {
   }>;
 }
 
+interface ActivityInstance {
+  id: number;
+  activity_id: number;
+  scheduled_date: string;
+  scheduled_time: string;
+  activity_name?: string;
+  guide_name?: string | null;
+  status?: string;
+  notes?: string | null;
+}
+
+interface HotelBookingToday {
+  id: number;
+  booking_reference: string;
+  guest_name: string;
+  group_name?: string | null;
+  hotel_id: number;
+  hotel_name?: string;
+  room_number?: string | null;
+  check_in_date: string;
+  check_out_date: string;
+  guests_count?: number;
+}
+
 const DailyActivityReport: React.FC = () => {
   const [arrivals, setArrivals] = useState<TransportSchedule[]>([]);
   const [departures, setDepartures] = useState<TransportSchedule[]>([]);
+  const [activities, setActivities] = useState<ActivityInstance[]>([]);
+  const [hotelCheckIns, setHotelCheckIns] = useState<HotelBookingToday[]>([]);
+  const [hotelCheckOuts, setHotelCheckOuts] = useState<HotelBookingToday[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,27 +61,28 @@ const DailyActivityReport: React.FC = () => {
     const fetchReportData = async () => {
       try {
         setLoading(true);
-        const [arrivalsResponse, departuresResponse] = await Promise.all([
-          fetch('/api/dashboard/arrivals'),
-          fetch('/api/dashboard/departures')
+        const [arrivalsData, departuresData, activitiesData, checkInsData, checkOutsData] = await Promise.all([
+          fetchJSON('/api/dashboard/arrivals'),
+          fetchJSON('/api/dashboard/departures'),
+          fetchJSON('/api/activities/today').catch(() => []),
+          fetchJSON('/api/hotels/checkins/today').catch(() => []),
+          fetchJSON('/api/hotels/checkouts/today').catch(() => []),
         ]);
 
-        if (!arrivalsResponse.ok || !departuresResponse.ok) {
-          throw new Error('Failed to fetch arrival or departure data');
-        }
-
-        const arrivalsData: TransportSchedule[] = await arrivalsResponse.json();
-        const departuresData: TransportSchedule[] = await departuresResponse.json();
-
-        // Ensure that we always have an array, even if the API response is malformed.
         setArrivals(Array.isArray(arrivalsData) ? arrivalsData : []);
         setDepartures(Array.isArray(departuresData) ? departuresData : []);
+        setActivities(Array.isArray(activitiesData) ? activitiesData : []);
+        setHotelCheckIns(Array.isArray(checkInsData) ? checkInsData : []);
+        setHotelCheckOuts(Array.isArray(checkOutsData) ? checkOutsData : []);
         setError(null);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred while fetching report data.';
         setError(errorMessage);
         setArrivals([]);
         setDepartures([]);
+        setActivities([]);
+        setHotelCheckIns([]);
+        setHotelCheckOuts([]);
         console.error(err);
       } finally {
         setLoading(false);
@@ -64,36 +92,76 @@ const DailyActivityReport: React.FC = () => {
   }, []);
 
   const formatPassengerNames = (passengers: TransportSchedule['passengers']) => {
-    // Added Array.isArray check for more robustness against unexpected API data.
     if (!Array.isArray(passengers) || passengers.length === 0) return 'N/A';
     return passengers.map(p => `${p.name} ${p.groupName ? `(${p.groupName})` : ''}`).join(', ');
   };
 
   const handleExportToExcel = () => {
-    const combinedData = [
-      ...arrivals.map(item => ({
-        'Type': 'Arrival',
-        'Passengers': formatPassengerNames(item.passengers),
-        'Vehicle': item.vehicle_number || 'N/A',
-        'Driver': item.driver_name || 'N/A',
-        'Pickup Time': new Date(item.pickup_time).toLocaleString(),
-        'From': item.pickup_location,
-        'To': item.dropoff_location,
-      })),
-      ...departures.map(item => ({
-        'Type': 'Departure',
-        'Passengers': formatPassengerNames(item.passengers),
-        'Vehicle': item.vehicle_number || 'N/A',
-        'Driver': item.driver_name || 'N/A',
-        'Pickup Time': new Date(item.pickup_time).toLocaleString(),
-        'From': item.pickup_location,
-        'To': item.dropoff_location,
-      })),
+    const wb = XLSX.utils.book_new();
+
+    const transportArrivals = arrivals.map(item => ({
+      Type: 'Arrival',
+      Passengers: formatPassengerNames(item.passengers),
+      Vehicle: item.vehicle_number || 'N/A',
+      Driver: item.driver_name || 'N/A',
+      'Pickup Time': new Date(item.pickup_time).toLocaleString(),
+      From: item.pickup_location,
+      To: item.dropoff_location,
+    }));
+    const transportDepartures = departures.map(item => ({
+      Type: 'Departure',
+      Passengers: formatPassengerNames(item.passengers),
+      Vehicle: item.vehicle_number || 'N/A',
+      Driver: item.driver_name || 'N/A',
+      'Pickup Time': new Date(item.pickup_time).toLocaleString(),
+      From: item.pickup_location,
+      To: item.dropoff_location,
+    }));
+
+    const activitiesSheet = activities.map(a => ({
+      Activity: a.activity_name || 'N/A',
+      Guide: a.guide_name || 'N/A',
+      Date: a.scheduled_date,
+      Time: a.scheduled_time,
+      Status: a.status || 'scheduled',
+      Notes: a.notes || '',
+    }));
+
+    const hotelCheckInsSheet = hotelCheckIns.map(h => ({
+      Type: 'Check-in',
+      Guest: h.guest_name,
+      Group: h.group_name || '',
+      Hotel: h.hotel_name || h.hotel_id,
+      Room: h.room_number || '',
+      'Check-in Date': h.check_in_date,
+      'Check-out Date': h.check_out_date,
+      Guests: h.guests_count || 1,
+    }));
+
+    const hotelCheckOutsSheet = hotelCheckOuts.map(h => ({
+      Type: 'Check-out',
+      Guest: h.guest_name,
+      Group: h.group_name || '',
+      Hotel: h.hotel_name || h.hotel_id,
+      Room: h.room_number || '',
+      'Check-in Date': h.check_in_date,
+      'Check-out Date': h.check_out_date,
+      Guests: h.guests_count || 1,
+    }));
+
+    const sheets = [
+      { name: 'Transport Arrivals', data: transportArrivals },
+      { name: 'Transport Departures', data: transportDepartures },
+      { name: 'Activities Today', data: activitiesSheet },
+      { name: 'Hotel Check-ins', data: hotelCheckInsSheet },
+      { name: 'Hotel Check-outs', data: hotelCheckOutsSheet },
     ];
 
-    const wb = XLSX.utils['book_new']();
-    const ws = XLSX.utils['json_to_sheet'](combinedData);
-    XLSX.utils['book_append_sheet'](wb, ws, "Daily Activity");
+    sheets.forEach(({ name, data }) => {
+      const ws = XLSX.utils.json_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, name);
+    });
+
     const today = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `Jiguang_Tour_Daily_Report_${today}.xlsx`);
   };
@@ -122,10 +190,10 @@ const DailyActivityReport: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Daily Activity Report</h1>
-        <Button onClick={handleExportToExcel} disabled={loading || (arrivals.length === 0 && departures.length === 0)}>
+        <Button onClick={handleExportToExcel} disabled={loading || (arrivals.length + departures.length + activities.length + hotelCheckIns.length + hotelCheckOuts.length === 0)}>
           <Download className="mr-2 h-4 w-4" />
           Export to Excel
         </Button>
@@ -135,7 +203,7 @@ const DailyActivityReport: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plane className="h-5 w-5 text-blue-600" />
-            Today's Activities ({arrivals.length + departures.length})
+            Transport (Arrivals + Departures): {arrivals.length + departures.length}
           </CardTitle>
           <CardDescription>All transport schedules for guests arriving and departing today.</CardDescription>
         </CardHeader>
@@ -179,7 +247,100 @@ const DailyActivityReport: React.FC = () => {
               </TableBody>
             </Table>
           ) : (
+            <p className="text-sm text-muted-foreground">No transport scheduled for today.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarCheck className="h-5 w-5 text-emerald-600" />
+            Activities Today: {activities.length}
+          </CardTitle>
+          <CardDescription>All activities scheduled for today.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {activities.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Activity</TableHead>
+                  <TableHead>Guide</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Notes</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {activities.map((a) => (
+                  <TableRow key={`act-${a.id}`}>
+                    <TableCell className="font-medium">{a.activity_name || 'N/A'}</TableCell>
+                    <TableCell>{a.guide_name || 'N/A'}</TableCell>
+                    <TableCell>{a.scheduled_date}</TableCell>
+                    <TableCell>{a.scheduled_time}</TableCell>
+                    <TableCell>{a.status || 'scheduled'}</TableCell>
+                    <TableCell>{a.notes || ''}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
             <p className="text-sm text-muted-foreground">No activities scheduled for today.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Hotel className="h-5 w-5 text-indigo-600" />
+            Hotels (Check-ins: {hotelCheckIns.length}, Check-outs: {hotelCheckOuts.length})
+          </CardTitle>
+          <CardDescription>Guests checking in and out today.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {(hotelCheckIns.length + hotelCheckOuts.length) > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Guest</TableHead>
+                  <TableHead>Group</TableHead>
+                  <TableHead>Hotel</TableHead>
+                  <TableHead>Room</TableHead>
+                  <TableHead>Check-in</TableHead>
+                  <TableHead>Check-out</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {hotelCheckIns.map(h => (
+                  <TableRow key={`hin-${h.id}`}>
+                    <TableCell><span className="font-semibold text-green-600">Check-in</span></TableCell>
+                    <TableCell className="font-medium">{h.guest_name}</TableCell>
+                    <TableCell>{h.group_name || ''}</TableCell>
+                    <TableCell>{h.hotel_name || h.hotel_id}</TableCell>
+                    <TableCell>{h.room_number || ''}</TableCell>
+                    <TableCell>{h.check_in_date}</TableCell>
+                    <TableCell>{h.check_out_date}</TableCell>
+                  </TableRow>
+                ))}
+                {hotelCheckOuts.map(h => (
+                  <TableRow key={`hout-${h.id}`}>
+                    <TableCell><span className="font-semibold text-red-600">Check-out</span></TableCell>
+                    <TableCell className="font-medium">{h.guest_name}</TableCell>
+                    <TableCell>{h.group_name || ''}</TableCell>
+                    <TableCell>{h.hotel_name || h.hotel_id}</TableCell>
+                    <TableCell>{h.room_number || ''}</TableCell>
+                    <TableCell>{h.check_in_date}</TableCell>
+                    <TableCell>{h.check_out_date}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-sm text-muted-foreground">No hotel check-ins or check-outs today.</p>
           )}
         </CardContent>
       </Card>
