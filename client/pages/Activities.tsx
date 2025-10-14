@@ -915,7 +915,7 @@ export default function Activities() {
                   <Button variant="outline" onClick={() => setIsScheduleActivityOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleScheduleActivity}>
+                  <Button onClick={handleScheduleActivity} disabled={dbReadOnly}>
                     Schedule Activity
                   </Button>
                 </div>
