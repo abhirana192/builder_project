@@ -2634,7 +2634,7 @@ export default function Transport() {
           {/* Airport Pickup Schedules (combined per group) */}
           <div className="grid gap-4">
             {buildCombinedAirportTransfers().filter(t => t.pickup).map((t) => {
-              const refSchedule = t.pickup || t.dropoff!;
+              const refSchedule = t.pickup!;
               const VehicleIcon = getVehicleIcon(refSchedule.vehicle_type);
               const StatusIcon = getStatusIcon(refSchedule.status);
 
@@ -2652,7 +2652,7 @@ export default function Transport() {
                             <Badge variant="secondary">{t.passengerCount} passengers</Badge>
                           </div>
 
-                          {/* Combined pickup + dropoff details */}
+                          {/* Airport Pickup details */}
                           <div className="space-y-3 text-sm">
                             {t.pickup && (
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-3 rounded-md border bg-blue-50">
@@ -2661,15 +2661,6 @@ export default function Transport() {
                                 <div className="flex items-center"><Clock className="mr-1 h-4 w-4" /> Time: {formatDateTime(t.pickup.pickup_time)}</div>
                                 <div className="flex items-center"><User className="mr-1 h-4 w-4" /> Driver: {t.pickup.driver_name}</div>
                                 <div className="flex items-center"><MapPin className="mr-1 h-4 w-4" /> To: {t.pickup.dropoff_location}</div>
-                              </div>
-                            )}
-                            {t.dropoff && (
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-3 rounded-md border bg-orange-50">
-                                <div className="font-medium text-orange-700">Airport Dropoff</div>
-                                <div className="flex items-center"><MapPin className="mr-1 h-4 w-4" /> From: {t.dropoff.pickup_location}</div>
-                                <div className="flex items-center"><Clock className="mr-1 h-4 w-4" /> Time: {formatDateTime(t.dropoff.pickup_time)}</div>
-                                <div className="flex items-center"><User className="mr-1 h-4 w-4" /> Driver: {t.dropoff.driver_name}</div>
-                                <div className="flex items-center"><MapPin className="mr-1 h-4 w-4" /> To: {t.dropoff.dropoff_location}</div>
                               </div>
                             )}
                           </div>
@@ -2733,8 +2724,8 @@ export default function Transport() {
 
           {/* Airport Dropoff Schedules (combined per group) */}
           <div className="grid gap-4">
-            {buildCombinedAirportTransfers().filter(t => t.dropoff && !t.pickup).map((t) => {
-              const refSchedule = t.dropoff || t.pickup!;
+            {buildCombinedAirportTransfers().filter(t => t.dropoff).map((t) => {
+              const refSchedule = t.dropoff!;
               const VehicleIcon = getVehicleIcon(refSchedule.vehicle_type);
 
               return (
