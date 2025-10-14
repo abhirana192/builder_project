@@ -806,7 +806,7 @@ export default function Transport() {
         if (!isNaN(flightDateTime.getTime())) {
           // Use original flight time for both pickups and dropoffs
           calculatedPickupTime = flightTimeToUse;
-          console.log('��� Using original flight time:', calculatedPickupTime);
+          console.log('✅ Using original flight time:', calculatedPickupTime);
         } else {
           console.error('❌ Invalid flight datetime:', flightTimeToUse);
         }
@@ -2631,16 +2631,15 @@ export default function Transport() {
             </Card>
           </div>
 
-          {/* Airport Pickup Schedules */}
+          {/* Airport Pickup Schedules (combined per group) */}
           <div className="grid gap-4">
-            {schedules.filter(s => s.transport_type === 'airport_pickup').map((schedule) => {
-              const VehicleIcon = getVehicleIcon(schedule.vehicle_type);
-              const StatusIcon = getStatusIcon(schedule.status);
-              const TransportIcon = getTransportTypeIcon(schedule.transport_type || 'custom');
-              const transportTypeColor = getTransportTypeColor(schedule.transport_type || 'custom');
+            {buildCombinedAirportTransfers().filter(t => t.pickup).map((t) => {
+              const refSchedule = t.pickup || t.dropoff!;
+              const VehicleIcon = getVehicleIcon(refSchedule.vehicle_type);
+              const StatusIcon = getStatusIcon(refSchedule.status);
 
               return (
-                <Card key={schedule.id} className="hover:shadow-lg transition-shadow">
+                <Card key={`grp-${t.groupId}`} className="hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4 flex-1">
@@ -2649,83 +2648,37 @@ export default function Transport() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2 mb-1">
-                            <h3 className="text-lg font-semibold text-foreground">{schedule.vehicle_number}</h3>
-                            <div className={`flex items-center space-x-1 ${transportTypeColor}`}>
-                              <TransportIcon className="h-4 w-4" />
-                              <span className="text-xs font-medium">
-                                {formatTransportType(schedule.transport_type || 'custom')}
-                              </span>
-                            </div>
-                            <Badge variant={getStatusColor(schedule.status)}>{schedule.status}</Badge>
+                            <h3 className="text-lg font-semibold text-foreground">{t.groupName}</h3>
+                            <Badge variant="secondary">{t.passengerCount} passengers</Badge>
                           </div>
 
-                          {/* Transport Details */}
-                          <div className="space-y-2">
-                            <p className="text-sm text-muted-foreground">{schedule.vehicle_type}</p>
-
-                            {/* Groups and Passenger Count */}
-                            {schedule.groups && schedule.groups.length > 0 && (
-                              <div className="flex items-center space-x-2">
-                                <Users className="h-4 w-4 text-blue-600" />
-                                <span className="text-sm">
-                                  {formatPassengerNames(schedule.groups)} ({schedule.passenger_count || 0} passengers)
-                                </span>
+                          {/* Combined pickup + dropoff details */}
+                          <div className="space-y-3 text-sm">
+                            {t.pickup && (
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-3 rounded-md border bg-blue-50">
+                                <div className="font-medium text-blue-700">Airport Pickup</div>
+                                <div className="flex items-center"><MapPin className="mr-1 h-4 w-4" /> From: {t.pickup.pickup_location}</div>
+                                <div className="flex items-center"><Clock className="mr-1 h-4 w-4" /> Time: {formatDateTime(t.pickup.pickup_time)}</div>
+                                <div className="flex items-center"><User className="mr-1 h-4 w-4" /> Driver: {t.pickup.driver_name}</div>
+                                <div className="flex items-center"><MapPin className="mr-1 h-4 w-4" /> To: {t.pickup.dropoff_location}</div>
                               </div>
                             )}
-
-                            {/* Activity Name */}
-                            {schedule.activity_name && (
-                              <div className="flex items-center space-x-2 text-green-600">
-                                <Mountain className="h-4 w-4" />
-                                <span className="text-sm font-medium">{schedule.activity_name}</span>
+                            {t.dropoff && (
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-3 rounded-md border bg-orange-50">
+                                <div className="font-medium text-orange-700">Airport Dropoff</div>
+                                <div className="flex items-center"><MapPin className="mr-1 h-4 w-4" /> From: {t.dropoff.pickup_location}</div>
+                                <div className="flex items-center"><Clock className="mr-1 h-4 w-4" /> Time: {formatDateTime(t.dropoff.pickup_time)}</div>
+                                <div className="flex items-center"><User className="mr-1 h-4 w-4" /> Driver: {t.dropoff.driver_name}</div>
+                                <div className="flex items-center"><MapPin className="mr-1 h-4 w-4" /> To: {t.dropoff.dropoff_location}</div>
                               </div>
                             )}
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                              <div className="flex items-center">
-                                <MapPin className="mr-1 h-4 w-4" />
-                                From: {schedule.pickup_location}
-                              </div>
-                              <div className="flex items-center">
-                                <MapPin className="mr-1 h-4 w-4" />
-                                To: {schedule.dropoff_location}
-                              </div>
-                              <div className="flex items-center">
-                                <Clock className="mr-1 h-4 w-4" />
-                                {getTimeLabel(schedule.transport_type)}: {formatDateTime(schedule.pickup_time)}
-                              </div>
-                              <div className="flex items-center">
-                                <User className="mr-1 h-4 w-4" />
-                                Driver: {schedule.driver_name}
-                              </div>
-                            </div>
                           </div>
                         </div>
                         <div className="text-right">
                           <StatusIcon className="h-6 w-6 text-muted-foreground mb-2" />
-                          {schedule.distance_km && (
-                            <p className="text-sm text-muted-foreground mb-3">{schedule.distance_km} km</p>
-                          )}
-
-                          {/* Action Buttons */}
                           <div className="flex flex-col space-y-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleViewTransportDetails(schedule)}
-                              className="text-xs"
-                            >
-                              View Details
-                            </Button>
-
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteTransport(schedule)}
-                              className="text-xs"
-                            >
-                              Delete
-                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => handleViewTransportDetails(refSchedule)} className="text-xs">Details</Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDeleteTransport(refSchedule)} className="text-xs">Delete</Button>
                           </div>
                         </div>
                       </div>
