@@ -99,7 +99,8 @@ import {
   removeMemberFromGroup,
   testAutoStatusUpdate,
   testAutoTransportScheduling,
-  manualTriggerAutoScheduling
+  manualTriggerAutoScheduling,
+  getGroupBookingsReport
 } from "./routes/groups";
 import {
   getAllActivities,
