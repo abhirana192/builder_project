@@ -2731,122 +2731,54 @@ export default function Transport() {
             </Card>
           </div>
 
-          {/* Airport Dropoff Schedules */}
+          {/* Airport Dropoff Schedules (combined per group) */}
           <div className="grid gap-4">
-            {schedules.filter(s => s.transport_type === 'airport_dropoff').map((schedule) => {
-              const VehicleIcon = getVehicleIcon(schedule.vehicle_type);
-              const TransportIcon = getTransportTypeIcon(schedule.transport_type || 'custom');
-              const transportTypeColor = getTransportTypeColor(schedule.transport_type || 'custom');
+            {buildCombinedAirportTransfers().filter(t => t.dropoff).map((t) => {
+              const refSchedule = t.dropoff || t.pickup!;
+              const VehicleIcon = getVehicleIcon(refSchedule.vehicle_type);
 
               return (
-                <Card key={schedule.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-blue-500">
+                <Card key={`grp-do-${t.groupId}`} className="hover:shadow-lg transition-shadow border-l-4 border-l-blue-500">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4 flex-1">
                         <div className="flex items-center justify-center w-12 h-12 bg-blue-50 rounded-lg">
-                          <TransportIcon className={`h-6 w-6 ${transportTypeColor}`} />
+                          <VehicleIcon className="h-6 w-6 text-blue-600" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2 mb-2">
-                            <h3 className="text-lg font-semibold text-foreground">{schedule.vehicle_number}</h3>
-                            <Badge variant="secondary">{formatTransportType(schedule.transport_type || 'custom')}</Badge>
-                            <Badge variant={getStatusColor(schedule.status)}>{schedule.status}</Badge>
+                            <h3 className="text-lg font-semibold text-foreground">{t.groupName}</h3>
+                            <Badge variant="secondary">{t.passengerCount} passengers</Badge>
                           </div>
 
-                          {schedule.groups && schedule.groups.length > 0 && (
-                            <div className="mb-3 p-3 bg-blue-50 rounded-lg">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <Users className="h-4 w-4 text-blue-600" />
-                                <span className="text-sm font-medium text-blue-800">
-                                  Groups: {formatPassengerNames(schedule.groups)}
-                                </span>
+                          <div className="space-y-3 text-sm">
+                            {t.pickup && (
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-3 rounded-md border bg-blue-50">
+                                <div className="font-medium text-blue-700">Airport Pickup</div>
+                                <div className="flex items-center"><MapPin className="mr-1 h-4 w-4" /> From: {t.pickup.pickup_location}</div>
+                                <div className="flex items-center"><Clock className="mr-1 h-4 w-4" /> Time: {formatDateTime(t.pickup.pickup_time)}</div>
+                                <div className="flex items-center"><User className="mr-1 h-4 w-4" /> Driver: {t.pickup.driver_name}</div>
+                                <div className="flex items-center"><MapPin className="mr-1 h-4 w-4" /> To: {t.pickup.dropoff_location}</div>
                               </div>
-                              <p className="text-sm text-blue-600">
-                                Total passengers: {schedule.passenger_count || 0}
-                              </p>
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div className="flex items-center text-blue-600">
-                              <MapPin className="mr-2 h-4 w-4" />
-                              <span className="font-medium">
-                                {schedule.transport_type === 'airport_pickup' ? 'From Airport' : 'To Airport'}
-                              </span>
-                            </div>
-                            <div className="flex items-center">
-                              <Clock className="mr-2 h-4 w-4" />
-                              <span className="font-medium">
-                                {getTimeLabel(schedule.transport_type)} Time: {formatDateTime(schedule.pickup_time)}
-                              </span>
-                            </div>
+                            )}
+                            {t.dropoff && (
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-3 rounded-md border bg-orange-50">
+                                <div className="font-medium text-orange-700">Airport Dropoff</div>
+                                <div className="flex items-center"><MapPin className="mr-1 h-4 w-4" /> From: {t.dropoff.pickup_location}</div>
+                                <div className="flex items-center"><Clock className="mr-1 h-4 w-4" /> Time: {formatDateTime(t.dropoff.pickup_time)}</div>
+                                <div className="flex items-center"><User className="mr-1 h-4 w-4" /> Driver: {t.dropoff.driver_name}</div>
+                                <div className="flex items-center"><MapPin className="mr-1 h-4 w-4" /> To: {t.dropoff.dropoff_location}</div>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-2xl font-bold text-blue-600">{schedule.passenger_count || 0}</div>
-                          <div className="text-sm text-muted-foreground mb-4">passengers</div>
-
-                          {/* Action Buttons */}
                           <div className="flex flex-col space-y-2 min-w-[120px]">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedScheduleForDetail(schedule);
-                                setIsDetailDialogOpen(true);
-                              }}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                              title="View Details"
-                            >
+                            <Button variant="outline" size="sm" onClick={() => { setSelectedScheduleForDetail(refSchedule); setIsDetailDialogOpen(true); }} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50" title="View Details">
                               <Eye className="h-4 w-4 mr-1" />
                               Details
                             </Button>
-
-                            <Select
-                              value={schedule.status}
-                              onValueChange={async (newStatus) => {
-                                try {
-                                  const response = await fetch(`/api/transport/schedules/${schedule.id}/status`, {
-                                    method: 'PATCH',
-                                    headers: {
-                                      'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({ status: newStatus })
-                                  });
-
-                                  if (response.ok) {
-                                    toast({
-                                      title: "Status Updated",
-                                      description: `Transport status updated to ${newStatus}`
-                                    });
-                                    fetchData();
-                                  } else {
-                                    throw new Error('Failed to update status');
-                                  }
-                                } catch (error) {
-                                  toast({
-                                    title: "Error",
-                                    description: "Failed to update transport status",
-                                    variant: "destructive"
-                                  });
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Status" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="scheduled">Scheduled</SelectItem>
-                                <SelectItem value="in_transit">In Transit</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                              </SelectContent>
-                            </Select>
-
-                            <DeleteScheduleDialog
-                              schedule={schedule}
-                              onDeleteSuccess={fetchData}
-                            />
+                            <DeleteScheduleDialog schedule={refSchedule} onDeleteSuccess={fetchData} />
                           </div>
                         </div>
                       </div>
