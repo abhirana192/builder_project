@@ -79,6 +79,7 @@ export const getTodaysActivityInstances: RequestHandler = (req, res) => {
         ai.*,
         a.name as activity_name,
         a.max_participants,
+        a.duration_hours,
         b.booking_reference,
         s.first_name || ' ' || s.last_name as guide_name
       FROM activity_instances ai
@@ -96,8 +97,78 @@ export const getTodaysActivityInstances: RequestHandler = (req, res) => {
 
     sql += " ORDER BY ai.scheduled_time ASC";
 
-    const instances = queries.getDatabase().prepare(sql).all(...params);
-    res.json(instances);
+    const instances = queries.getDatabase().prepare(sql).all(...params) as any[];
+
+    const enrichWithParticipants = (activityName: string) => {
+      const schedules = queries.getDatabase().prepare(`
+        SELECT * FROM group_transport_schedules
+        WHERE DATE(pickup_time) = DATE(?) AND activity_name = ?
+        ORDER BY pickup_time
+      `).all(filterDate, activityName) as any[];
+
+      const participantsMap = new Map<number, { id: number; name: string; groupName?: string; groupId?: number | null; pickups: string[]; dropoffs: string[] }>();
+
+      const addLoc = (arr: string[], loc?: string | null) => {
+        const v = (loc || '').trim();
+        if (v && !arr.includes(v)) arr.push(v);
+      };
+
+      for (const sch of schedules) {
+        if (!sch.groups_data) continue;
+        try {
+          const groups = JSON.parse(sch.groups_data);
+          const passengers = groups.flatMap((p: { id: number; type: string }) => {
+            if (p.type === 'group') {
+              const group = queries.getGroupById().get(p.id) as { group_name: string };
+              const members = queries.getGroupMembers().all(p.id) as { first_name: string; last_name: string; id: number }[];
+              if (members && members.length > 0) {
+                return members.map(member => {
+                  const name = `${member?.first_name || ''} ${member?.last_name || ''}`.trim() || 'Unknown Member';
+                  return { id: member.id, type: 'member', name, groupName: group?.group_name || 'Unknown Group', groupId: p.id };
+                });
+              } else {
+                return [{ id: p.id, type: 'group', name: group?.group_name || 'Unknown Group', groupId: p.id }];
+              }
+            } else if (p.type === 'member') {
+              const member = queries.getMemberWithGroupInfo().get(p.id) as { first_name: string; last_name: string; group_name: string; group_id?: number | null };
+              const name = `${member?.first_name || ''} ${member?.last_name || ''}`.trim() || 'Unknown Member';
+              return [{ id: p.id, type: 'member', name, groupName: member?.group_name || 'No Group', groupId: member?.group_id ?? null }];
+            }
+            return [];
+          });
+
+          for (const ps of passengers) {
+            const entry = participantsMap.get(ps.id) || { id: ps.id, name: ps.name, groupName: ps.groupName, groupId: ps.groupId, pickups: [], dropoffs: [] };
+            addLoc(entry.pickups, sch.pickup_location);
+            addLoc(entry.dropoffs, sch.dropoff_location);
+            participantsMap.set(ps.id, entry);
+          }
+        } catch (e) {
+          console.error('Error parsing groups_data for activity participants:', sch.groups_data, e);
+        }
+      }
+
+      return Array.from(participantsMap.values());
+    };
+
+    const detailed = instances.map(inst => {
+      const participants = inst.activity_name ? enrichWithParticipants(inst.activity_name) : [];
+      let computed_end_time: string | null = null;
+      try {
+        if (inst.scheduled_time && inst.duration_hours) {
+          const [h, m] = String(inst.scheduled_time).split(':').map((x: string) => parseInt(x, 10));
+          const dur = Number(inst.duration_hours) || 0;
+          const endMinutes = h * 60 + m + Math.round(dur * 60);
+          const eh = Math.floor(endMinutes / 60) % 24;
+          const em = endMinutes % 60;
+          const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+          computed_end_time = `${pad(eh)}:${pad(em)}`;
+        }
+      } catch {}
+      return { ...inst, participants, computed_end_time };
+    });
+
+    res.json(detailed);
   } catch (error) {
     console.error("Error fetching today's activity instances:", error);
     res.status(500).json({ error: "Failed to fetch today's activity instances" });
