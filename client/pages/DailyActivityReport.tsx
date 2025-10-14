@@ -57,38 +57,51 @@ const DailyActivityReport: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchReportData = async () => {
-      try {
-        setLoading(true);
-        const [arrivalsData, departuresData, activitiesData, checkInsData, checkOutsData] = await Promise.all([
-          fetchJSON('/api/dashboard/arrivals'),
-          fetchJSON('/api/dashboard/departures'),
-          fetchJSON('/api/activities/today').catch(() => []),
-          fetchJSON('/api/hotels/checkins/today').catch(() => []),
-          fetchJSON('/api/hotels/checkouts/today').catch(() => []),
-        ]);
+  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [startTime, setStartTime] = useState<string>('');
+  const [endTime, setEndTime] = useState<string>('');
 
-        setArrivals(Array.isArray(arrivalsData) ? arrivalsData : []);
-        setDepartures(Array.isArray(departuresData) ? departuresData : []);
-        setActivities(Array.isArray(activitiesData) ? activitiesData : []);
-        setHotelCheckIns(Array.isArray(checkInsData) ? checkInsData : []);
-        setHotelCheckOuts(Array.isArray(checkOutsData) ? checkOutsData : []);
-        setError(null);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred while fetching report data.';
-        setError(errorMessage);
-        setArrivals([]);
-        setDepartures([]);
-        setActivities([]);
-        setHotelCheckIns([]);
-        setHotelCheckOuts([]);
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const fetchReportData = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (selectedDate) params.set('date', selectedDate);
+      if (startTime && endTime) {
+        params.set('startTime', startTime);
+        params.set('endTime', endTime);
       }
-    };
+
+      const [arrivalsData, departuresData, activitiesData, checkInsData, checkOutsData] = await Promise.all([
+        fetchJSON(`/api/dashboard/arrivals?${params.toString()}`),
+        fetchJSON(`/api/dashboard/departures?${params.toString()}`),
+        fetchJSON(`/api/activities/today?${params.toString()}`).catch(() => []),
+        fetchJSON(`/api/hotels/checkins/today?${params.toString()}`).catch(() => []),
+        fetchJSON(`/api/hotels/checkouts/today?${params.toString()}`).catch(() => []),
+      ]);
+
+      setArrivals(Array.isArray(arrivalsData) ? arrivalsData : []);
+      setDepartures(Array.isArray(departuresData) ? departuresData : []);
+      setActivities(Array.isArray(activitiesData) ? activitiesData : []);
+      setHotelCheckIns(Array.isArray(checkInsData) ? checkInsData : []);
+      setHotelCheckOuts(Array.isArray(checkOutsData) ? checkOutsData : []);
+      setError(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred while fetching report data.';
+      setError(errorMessage);
+      setArrivals([]);
+      setDepartures([]);
+      setActivities([]);
+      setHotelCheckIns([]);
+      setHotelCheckOuts([]);
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchReportData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const formatPassengerNames = (passengers: TransportSchedule['passengers']) => {
