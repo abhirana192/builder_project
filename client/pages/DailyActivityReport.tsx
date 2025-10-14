@@ -81,6 +81,12 @@ const DailyActivityReport: React.FC = () => {
   const [startTime, setStartTime] = useState<string>('00:00');
   const [endTime, setEndTime] = useState<string>('23:59');
 
+  // Group bookings report state
+  const [groupStart, setGroupStart] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [groupEnd, setGroupEnd] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [groupStatus, setGroupStatus] = useState<string>('active');
+  const [groupReport, setGroupReport] = useState<GroupReportItem[]>([]);
+
   const fetchReportData = async () => {
     try {
       setLoading(true);
