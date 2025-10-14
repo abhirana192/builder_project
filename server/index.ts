@@ -233,14 +233,11 @@ export function createServer() {
 
   // Endpoint to report DB mode
   app.get('/api/db/status', (req, res) => {
-    const { DATABASE_IS_READONLY } = require('./db/database');
     res.json({ readOnly: !!DATABASE_IS_READONLY });
   });
 
   // Block mutating requests if the database is read-only
   app.use((req, res, next) => {
-    // Import here to avoid circular import at top-level
-    const { DATABASE_IS_READONLY } = require('./db/database');
     if (DATABASE_IS_READONLY && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
       return res.status(503).json({ error: 'Database is in read-only mode. Please contact administrator.', code: 'DATABASE_READONLY' });
     }
