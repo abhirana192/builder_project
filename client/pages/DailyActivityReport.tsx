@@ -190,12 +190,31 @@ const DailyActivityReport: React.FC = () => {
       Guests: h.guests_count || 1,
     }));
 
+    const groupBookingsSheet = groupReport.map(g => ({
+      Group: g.group_name,
+      Status: g.status,
+      Pax: g.total_members,
+      'Tour Start': g.tour_start_date || '',
+      'Tour End': g.tour_end_date || '',
+      'Arrival Date': g.arrival_date || '',
+      'Arrival Flight': g.arrival_flight_number || '',
+      'Arrival Time': g.arrival_flight_time || '',
+      'Departure Date': g.departure_date || '',
+      'Departure Flight': g.departure_flight_number || '',
+      'Departure Time': g.departure_flight_time || '',
+      'Leader Name': g.leader_name || '',
+      'Leader Email': g.leader_email || '',
+      'Leader Phone': g.leader_phone || '',
+      Notes: g.group_notes || ''
+    }));
+
     const sheets = [
       { name: 'Transport Arrivals', data: transportArrivals },
       { name: 'Transport Departures', data: transportDepartures },
       { name: 'Activities Today', data: activitiesSheet },
       { name: 'Hotel Check-ins', data: hotelCheckInsSheet },
       { name: 'Hotel Check-outs', data: hotelCheckOutsSheet },
+      { name: 'Group Bookings', data: groupBookingsSheet },
     ];
 
     sheets.forEach(({ name, data }) => {
