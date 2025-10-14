@@ -213,3 +213,35 @@ export const getGuestWithGroup: RequestHandler = (req, res) => {
     res.status(500).json({ error: "Failed to fetch guest information" });
   }
 };
+
+export const getHotelCheckInsToday: RequestHandler = (req, res) => {
+  try {
+    const results = queries.getDatabase().prepare(`
+      SELECT hb.*, h.name AS hotel_name
+      FROM hotel_bookings hb
+      JOIN hotels h ON hb.hotel_id = h.id
+      WHERE DATE(hb.check_in_date) = DATE('now')
+      ORDER BY h.name, hb.guest_name
+    `).all();
+    res.json(results);
+  } catch (error) {
+    console.error("Error fetching today's hotel check-ins:", error);
+    res.status(500).json({ error: "Failed to fetch today's hotel check-ins" });
+  }
+};
+
+export const getHotelCheckOutsToday: RequestHandler = (req, res) => {
+  try {
+    const results = queries.getDatabase().prepare(`
+      SELECT hb.*, h.name AS hotel_name
+      FROM hotel_bookings hb
+      JOIN hotels h ON hb.hotel_id = h.id
+      WHERE DATE(hb.check_out_date) = DATE('now')
+      ORDER BY h.name, hb.guest_name
+    `).all();
+    res.json(results);
+  } catch (error) {
+    console.error("Error fetching today's hotel check-outs:", error);
+    res.status(500).json({ error: "Failed to fetch today's hotel check-outs" });
+  }
+};
