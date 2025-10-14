@@ -58,8 +58,8 @@ const DailyActivityReport: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [startTime, setStartTime] = useState<string>('');
-  const [endTime, setEndTime] = useState<string>('');
+  const [startTime, setStartTime] = useState<string>('00:00');
+  const [endTime, setEndTime] = useState<string>('23:59');
 
   const fetchReportData = async () => {
     try {
