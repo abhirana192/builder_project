@@ -111,6 +111,7 @@ const DailyActivityReport: React.FC = () => {
       setActivities(Array.isArray(activitiesData) ? activitiesData : []);
       setHotelCheckIns(Array.isArray(checkInsData) ? checkInsData : []);
       setHotelCheckOuts(Array.isArray(checkOutsData) ? checkOutsData : []);
+      setGroupReport(Array.isArray(groupReportData) ? groupReportData : []);
       setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred while fetching report data.';
