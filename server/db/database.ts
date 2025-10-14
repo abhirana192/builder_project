@@ -357,7 +357,7 @@ export const queries = {
   
   // Booking queries
   getAllBookings: () => getDatabase().prepare(`
-    SELECT b.*, g.first_name || ' ' || g.last_name as guest_name, tp.name as tour_name, s.first_name || ' ' || s.last_name as guide_name
+    SELECT b.*, b.invoice_number, g.first_name || ' ' || g.last_name as guest_name, tp.name as tour_name, s.first_name || ' ' || s.last_name as guide_name
     FROM bookings b
     JOIN guests g ON b.guest_id = g.id
     JOIN tour_packages tp ON b.tour_package_id = tp.id
@@ -365,7 +365,7 @@ export const queries = {
     ORDER BY b.start_date DESC
   `),
   getBookingById: () => getDatabase().prepare(`
-    SELECT b.*, g.first_name || ' ' || g.last_name as guest_name, g.email as guest_email, tp.name as tour_name, s.first_name || ' ' || s.last_name as guide_name
+    SELECT b.*, b.invoice_number, g.first_name || ' ' || g.last_name as guest_name, g.email as guest_email, tp.name as tour_name, s.first_name || ' ' || s.last_name as guide_name
     FROM bookings b
     JOIN guests g ON b.guest_id = g.id
     JOIN tour_packages tp ON b.tour_package_id = tp.id
@@ -373,7 +373,7 @@ export const queries = {
     WHERE b.id = ?
   `),
   getBookingsByStatus: () => getDatabase().prepare(`
-    SELECT b.*, g.first_name || ' ' || g.last_name as guest_name, tp.name as tour_name
+    SELECT b.*, b.invoice_number, g.first_name || ' ' || g.last_name as guest_name, tp.name as tour_name
     FROM bookings b
     JOIN guests g ON b.guest_id = g.id
     JOIN tour_packages tp ON b.tour_package_id = tp.id
