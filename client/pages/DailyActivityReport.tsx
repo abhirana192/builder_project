@@ -218,7 +218,7 @@ const DailyActivityReport: React.FC = () => {
               />
             </div>
             <div className="flex flex-col">
-              <label className="text-xs text-muted-foreground mb-1">Start time (optional)</label>
+              <label className="text-xs text-muted-foreground mb-1">Start time</label>
               <input
                 type="time"
                 value={startTime}
