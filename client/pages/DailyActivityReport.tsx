@@ -33,6 +33,16 @@ interface ActivityInstance {
   guide_name?: string | null;
   status?: string;
   notes?: string | null;
+  duration_hours?: number | null;
+  computed_end_time?: string | null;
+  participants?: Array<{
+    id: number;
+    name: string;
+    groupName?: string;
+    groupId?: number | null;
+    pickups?: string[];
+    dropoffs?: string[];
+  }>;
 }
 
 interface HotelBookingToday {
