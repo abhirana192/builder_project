@@ -227,7 +227,7 @@ const DailyActivityReport: React.FC = () => {
               />
             </div>
             <div className="flex flex-col">
-              <label className="text-xs text-muted-foreground mb-1">End time (optional)</label>
+              <label className="text-xs text-muted-foreground mb-1">End time</label>
               <input
                 type="time"
                 value={endTime}
