@@ -48,15 +48,15 @@ export const getTodaysArrivals: RequestHandler = (req, res) => {
               if (members && members.length > 0) {
                 return members.map(member => {
                   const name = `${member?.first_name || ''} ${member?.last_name || ''}`.trim() || 'Unknown Member';
-                  return { id: member.id, type: 'member', name, groupName: group?.group_name || 'Unknown Group' };
+                  return { id: member.id, type: 'member', name, groupName: group?.group_name || 'Unknown Group', groupId: p.id };
                 });
               } else {
-                return [{ id: p.id, type: 'group', name: group?.group_name || 'Unknown Group' }];
+                return [{ id: p.id, type: 'group', name: group?.group_name || 'Unknown Group', groupId: p.id }];
               }
             } else if (p.type === 'member') {
-              const member = queries.getMemberWithGroupInfo().get(p.id) as { first_name: string; last_name: string; group_name: string };
+              const member = queries.getMemberWithGroupInfo().get(p.id) as { first_name: string; last_name: string; group_name: string; group_id?: number | null };
               const name = `${member?.first_name || ''} ${member?.last_name || ''}`.trim() || 'Unknown Member';
-              return [{ id: p.id, type: 'member', name, groupName: member?.group_name || 'No Group' }];
+              return [{ id: p.id, type: 'member', name, groupName: member?.group_name || 'No Group', groupId: member?.group_id ?? null }];
             }
             return [];
           });
@@ -112,15 +112,15 @@ export const getTodaysDepartures: RequestHandler = (req, res) => {
               if (members && members.length > 0) {
                 return members.map(member => {
                   const name = `${member?.first_name || ''} ${member?.last_name || ''}`.trim() || 'Unknown Member';
-                  return { id: member.id, type: 'member', name, groupName: group?.group_name || 'Unknown Group' };
+                  return { id: member.id, type: 'member', name, groupName: group?.group_name || 'Unknown Group', groupId: p.id };
                 });
               } else {
-                return [{ id: p.id, type: 'group', name: group?.group_name || 'Unknown Group' }];
+                return [{ id: p.id, type: 'group', name: group?.group_name || 'Unknown Group', groupId: p.id }];
               }
             } else if (p.type === 'member') {
-              const member = queries.getMemberWithGroupInfo().get(p.id) as { first_name: string; last_name: string; group_name: string };
+              const member = queries.getMemberWithGroupInfo().get(p.id) as { first_name: string; last_name: string; group_name: string; group_id?: number | null };
               const name = `${member?.first_name || ''} ${member?.last_name || ''}`.trim() || 'Unknown Member';
-              return [{ id: p.id, type: 'member', name, groupName: member?.group_name || 'No Group' }];
+              return [{ id: p.id, type: 'member', name, groupName: member?.group_name || 'No Group', groupId: member?.group_id ?? null }];
             }
             return [];
           });
