@@ -483,6 +483,9 @@ const DailyActivityReport: React.FC = () => {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold mb-2">Daily Activity Report</h1>
+          {dbReadOnly ? (
+            <div className="mb-2 text-sm text-yellow-700 bg-yellow-100 px-3 py-2 rounded">Database is in read-only mode — mutating actions are disabled. Prints and local edits are still available.</div>
+          ) : null}
           <div className="flex flex-wrap gap-3 items-center">
             <div className="flex flex-col">
               <label className="text-xs text-muted-foreground mb-1">Date</label>
