@@ -40,8 +40,7 @@ interface ActivityInstance {
     name: string;
     groupName?: string;
     groupId?: number | null;
-    pickups?: string[];
-    dropoffs?: string[];
+    location?: string | null;
   }>;
 }
 
