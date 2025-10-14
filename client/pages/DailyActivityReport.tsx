@@ -20,6 +20,7 @@ interface TransportSchedule {
     type: string;
     id: number;
     groupName?: string;
+    groupId?: number | null;
   }>;
 }
 
@@ -227,6 +228,8 @@ const DailyActivityReport: React.FC = () => {
               <tr>
                 <th>Type</th>
                 <th>Passengers</th>
+                <th>Group ID(s)</th>
+                <th>Group Members</th>
                 <th>Vehicle</th>
                 <th>Driver</th>
                 <th>Pickup Time</th>
@@ -235,17 +238,31 @@ const DailyActivityReport: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              ${transportRows.map(t => `
+              ${transportRows.map(t => {
+                const groupMap = new Map();
+                (t.passengers || []).forEach(p => {
+                  const gid = p.groupId;
+                  if (gid) {
+                    const arr = groupMap.get(gid) || [];
+                    if (!arr.includes(p.name)) arr.push(p.name);
+                    groupMap.set(gid, arr);
+                  }
+                });
+                const groupIdsStr = Array.from(groupMap.keys()).join(', ');
+                const membersByGroupStr = Array.from(groupMap.entries()).map(([gid, names]) => `#${gid}: ${names.join(', ')}`).join(' | ');
+                return `
                 <tr>
                   <td>${t.type}</td>
                   <td>${formatPassengerNames(t.passengers)}</td>
+                  <td>${groupIdsStr || '—'}</td>
+                  <td>${membersByGroupStr || '—'}</td>
                   <td>${t.vehicle_number || 'N/A'}</td>
                   <td>${t.driver_name || 'N/A'}</td>
                   <td class="nowrap">${t.pickup_time ? new Date(t.pickup_time).toLocaleString() : ''}</td>
                   <td>${t.pickup_location || ''}</td>
                   <td>${t.dropoff_location || ''}</td>
-                </tr>
-              `).join('')}
+                </tr>`;
+              }).join('')}
             </tbody>
           </table>
         </div>
@@ -556,6 +573,8 @@ const DailyActivityReport: React.FC = () => {
                 <TableRow>
                   <TableHead>Type</TableHead>
                   <TableHead>Passenger(s)</TableHead>
+                  <TableHead>Group ID(s)</TableHead>
+                  <TableHead>Group Members</TableHead>
                   <TableHead>Vehicle</TableHead>
                   <TableHead>Driver</TableHead>
                   <TableHead>Pickup Time</TableHead>
@@ -564,28 +583,58 @@ const DailyActivityReport: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {arrivals.map((item) => (
-                  <TableRow key={`arr-${item.id}`}>
-                    <TableCell><span className="font-semibold text-green-600">Arrival</span></TableCell>
-                    <TableCell className="font-medium">{formatPassengerNames(item.passengers)}</TableCell>
-                    <TableCell>{item.vehicle_number || 'N/A'}</TableCell>
-                    <TableCell>{item.driver_name || 'N/A'}</TableCell>
-                    <TableCell>{new Date(item.pickup_time).toLocaleString()}</TableCell>
-                    <TableCell>{item.pickup_location}</TableCell>
-                    <TableCell>{item.dropoff_location}</TableCell>
-                  </TableRow>
-                ))}
-                {departures.map((item) => (
-                  <TableRow key={`dep-${item.id}`}>
-                    <TableCell><span className="font-semibold text-red-600">Departure</span></TableCell>
-                    <TableCell className="font-medium">{formatPassengerNames(item.passengers)}</TableCell>
-                    <TableCell>{item.vehicle_number || 'N/A'}</TableCell>
-                    <TableCell>{item.driver_name || 'N/A'}</TableCell>
-                    <TableCell>{new Date(item.pickup_time).toLocaleString()}</TableCell>
-                    <TableCell>{item.pickup_location}</TableCell>
-                    <TableCell>{item.dropoff_location}</TableCell>
-                  </TableRow>
-                ))}
+                {arrivals.map((item) => {
+                  const groupMap = new Map<number, string[]>();
+                  (item.passengers || []).forEach(p => {
+                    const gid = (p as any).groupId as number | null | undefined;
+                    if (gid && typeof gid === 'number') {
+                      const arr = groupMap.get(gid) || [];
+                      if (!arr.includes(p.name)) arr.push(p.name);
+                      groupMap.set(gid, arr);
+                    }
+                  });
+                  const groupIdsStr = Array.from(groupMap.keys()).join(', ');
+                  const membersByGroupStr = Array.from(groupMap.entries()).map(([gid, names]) => `#${gid}: ${names.join(', ')}`).join(' | ');
+                  return (
+                    <TableRow key={`arr-${item.id}`}>
+                      <TableCell><span className="font-semibold text-green-600">Arrival</span></TableCell>
+                      <TableCell className="font-medium">{formatPassengerNames(item.passengers)}</TableCell>
+                      <TableCell>{groupIdsStr || '—'}</TableCell>
+                      <TableCell className="max-w-[360px] truncate" title={membersByGroupStr}>{membersByGroupStr || '—'}</TableCell>
+                      <TableCell>{item.vehicle_number || 'N/A'}</TableCell>
+                      <TableCell>{item.driver_name || 'N/A'}</TableCell>
+                      <TableCell>{new Date(item.pickup_time).toLocaleString()}</TableCell>
+                      <TableCell>{item.pickup_location}</TableCell>
+                      <TableCell>{item.dropoff_location}</TableCell>
+                    </TableRow>
+                  );
+                })}
+                {departures.map((item) => {
+                  const groupMap = new Map<number, string[]>();
+                  (item.passengers || []).forEach(p => {
+                    const gid = (p as any).groupId as number | null | undefined;
+                    if (gid && typeof gid === 'number') {
+                      const arr = groupMap.get(gid) || [];
+                      if (!arr.includes(p.name)) arr.push(p.name);
+                      groupMap.set(gid, arr);
+                    }
+                  });
+                  const groupIdsStr = Array.from(groupMap.keys()).join(', ');
+                  const membersByGroupStr = Array.from(groupMap.entries()).map(([gid, names]) => `#${gid}: ${names.join(', ')}`).join(' | ');
+                  return (
+                    <TableRow key={`dep-${item.id}`}>
+                      <TableCell><span className="font-semibold text-red-600">Departure</span></TableCell>
+                      <TableCell className="font-medium">{formatPassengerNames(item.passengers)}</TableCell>
+                      <TableCell>{groupIdsStr || '—'}</TableCell>
+                      <TableCell className="max-w-[360px] truncate" title={membersByGroupStr}>{membersByGroupStr || '—'}</TableCell>
+                      <TableCell>{item.vehicle_number || 'N/A'}</TableCell>
+                      <TableCell>{item.driver_name || 'N/A'}</TableCell>
+                      <TableCell>{new Date(item.pickup_time).toLocaleString()}</TableCell>
+                      <TableCell>{item.pickup_location}</TableCell>
+                      <TableCell>{item.dropoff_location}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : (

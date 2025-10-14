@@ -307,7 +307,8 @@ export const queries = {
     SELECT
       g.first_name,
       g.last_name,
-      tg.group_name
+      tg.group_name,
+      tg.id as group_id
     FROM guests g
     LEFT JOIN group_members gm ON g.id = gm.guest_id
     LEFT JOIN tour_groups tg ON gm.group_id = tg.id
