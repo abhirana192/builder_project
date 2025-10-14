@@ -173,25 +173,50 @@ export default function Transport() {
   }, []);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
-      const [vehiclesResponse, schedulesResponse, driversResponse, groupsResponse] = await Promise.all([
+      // Use Promise.allSettled to avoid one failing request cancelling others
+      const results = await Promise.allSettled([
         fetch('/api/vehicles'),
         fetch('/api/transport/schedules'),
         fetch('/api/staff'), // Get all staff, we'll filter drivers
         fetch('/api/groups')
       ]);
 
-      const vehiclesData = await vehiclesResponse.json();
-      const schedulesData = await schedulesResponse.json();
-      const staffData = await driversResponse.json();
-      const groupsData = await groupsResponse.json();
+      const safeParse = async (resResult: any, name: string) => {
+        if (resResult.status === 'fulfilled') {
+          const res = resResult.value;
+          if (res && res.ok) {
+            try {
+              return await res.json();
+            } catch (err) {
+              console.warn(`${name} response json parsing failed:`, err);
+              return [];
+            }
+          } else {
+            console.warn(`${name} fetch returned non-ok status:`, res && res.status);
+            return [];
+          }
+        } else {
+          console.warn(`${name} fetch failed:`, resResult.reason);
+          return [];
+        }
+      };
+
+      const [vehiclesData, schedulesData, staffData, groupsData] = await Promise.all([
+        safeParse(results[0], 'vehicles'),
+        safeParse(results[1], 'schedules'),
+        safeParse(results[2], 'staff'),
+        safeParse(results[3], 'groups')
+      ]);
 
       // Filter drivers from staff
-      const driversData = staffData.filter((staff: any) => staff.role === 'driver' && staff.is_active);
+      const driversData = Array.isArray(staffData) ? staffData.filter((staff: any) => staff.role === 'driver' && staff.is_active) : [];
 
       // Fetch detailed group data with members for proper display
-      const groupsWithMembers = await Promise.all(
+      const groupsWithMembers = Array.isArray(groupsData) ? await Promise.all(
         groupsData.map(async (group: any) => {
+          if (!group || !group.id) return group;
           try {
             const groupDetailResponse = await fetch(`/api/groups/${group.id}`);
             if (groupDetailResponse.ok) {
@@ -205,14 +230,17 @@ export default function Transport() {
             return group;
           }
         })
-      );
+      ) : [];
 
-      setVehicles(vehiclesData);
-      setSchedules(schedulesData);
+      setVehicles(Array.isArray(vehiclesData) ? vehiclesData : []);
+      setSchedules(Array.isArray(schedulesData) ? schedulesData : []);
       setDrivers(driversData);
       setGroups(groupsWithMembers);
+
     } catch (error) {
       console.error('Error fetching transport data:', error);
+      // Inform user via toast if available
+      try { toast?.({ title: 'Failed to load transport data', description: String(error), variant: 'destructive' }); } catch (e) {}
     } finally {
       setLoading(false);
     }
