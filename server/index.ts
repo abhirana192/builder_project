@@ -231,6 +231,12 @@ export function createServer() {
   app.delete("/api/clear/bookings", clearBookingData);
   app.delete("/api/clear/all-transport-bookings", clearAllTransportAndBookings);
 
+  // Endpoint to report DB mode
+  app.get('/api/db/status', (req, res) => {
+    const { DATABASE_IS_READONLY } = require('./db/database');
+    res.json({ readOnly: !!DATABASE_IS_READONLY });
+  });
+
   // Block mutating requests if the database is read-only
   app.use((req, res, next) => {
     // Import here to avoid circular import at top-level
