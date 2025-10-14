@@ -48,6 +48,26 @@ interface HotelBookingToday {
   guests_count?: number;
 }
 
+interface GroupReportItem {
+  id: number;
+  group_name: string;
+  status: string;
+  total_members: number;
+  group_type: string;
+  tour_start_date?: string | null;
+  tour_end_date?: string | null;
+  arrival_date?: string | null;
+  arrival_flight_number?: string | null;
+  arrival_flight_time?: string | null;
+  departure_date?: string | null;
+  departure_flight_number?: string | null;
+  departure_flight_time?: string | null;
+  group_notes?: string | null;
+  leader_name?: string | null;
+  leader_email?: string | null;
+  leader_phone?: string | null;
+}
+
 const DailyActivityReport: React.FC = () => {
   const [arrivals, setArrivals] = useState<TransportSchedule[]>([]);
   const [departures, setDepartures] = useState<TransportSchedule[]>([]);
