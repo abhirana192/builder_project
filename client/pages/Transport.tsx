@@ -2733,7 +2733,7 @@ export default function Transport() {
 
           {/* Airport Dropoff Schedules (combined per group) */}
           <div className="grid gap-4">
-            {buildCombinedAirportTransfers().filter(t => t.dropoff).map((t) => {
+            {buildCombinedAirportTransfers().filter(t => t.dropoff && !t.pickup).map((t) => {
               const refSchedule = t.dropoff || t.pickup!;
               const VehicleIcon = getVehicleIcon(refSchedule.vehicle_type);
 
