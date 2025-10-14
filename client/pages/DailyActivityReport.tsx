@@ -283,30 +283,44 @@ const DailyActivityReport: React.FC = () => {
       sections.push(`
         <div class="section">
           <h2>Activities Today: ${activities.length}</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Activity</th>
-                <th>Guide</th>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Status</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${activities.map(a => `
-                <tr>
-                  <td>${a.activity_name || 'N/A'}</td>
-                  <td>${a.guide_name || 'N/A'}</td>
-                  <td>${a.scheduled_date}</td>
-                  <td>${a.scheduled_time}</td>
-                  <td>${a.status || 'scheduled'}</td>
-                  <td>${a.notes || ''}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+          ${activities.map(a => {
+            const pRows = (a.participants || []).map(p => ({
+              name: p.name,
+              group: p.groupName || '',
+              groupId: p.groupId || '',
+              pickups: (p.pickups || []).join(', '),
+              dropoffs: (p.dropoffs || []).join(', '),
+            }));
+            return `
+            <div style="margin: 12px 0;">
+              <div class="muted">Guide: ${a.guide_name || 'N/A'} | Date: ${a.scheduled_date} | Start: ${a.scheduled_time} | End: ${a.computed_end_time || ''} | Status: ${a.status || 'scheduled'}</div>
+              <div style="font-weight:600; margin: 4px 0 8px;">${a.activity_name || 'N/A'}</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Participant</th>
+                    <th>Group</th>
+                    <th>Group ID</th>
+                    <th>Pickup(s)</th>
+                    <th>Dropoff(s)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${pRows.length > 0 ? pRows.map(r => `
+                    <tr>
+                      <td>${r.name}</td>
+                      <td>${r.group}</td>
+                      <td>${r.groupId || '—'}</td>
+                      <td>${r.pickups || '—'}</td>
+                      <td>${r.dropoffs || '—'}</td>
+                    </tr>
+                  `).join('') : `
+                    <tr><td colspan="5" class="muted">No participants linked via transport schedules.</td></tr>
+                  `}
+                </tbody>
+              </table>
+            </div>`;
+          }).join('')}
         </div>
       `);
     }
@@ -659,34 +673,68 @@ const DailyActivityReport: React.FC = () => {
             <CalendarCheck className="h-5 w-5 text-emerald-600" />
             Activities Today: {activities.length}
           </CardTitle>
-          <CardDescription>All activities scheduled for today.</CardDescription>
+          <CardDescription>Each activity includes a participant list with group and pickup/dropoff info.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           {activities.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Activity</TableHead>
-                  <TableHead>Guide</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Notes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {activities.map((a) => (
-                  <TableRow key={`act-${a.id}`}>
-                    <TableCell className="font-medium">{a.activity_name || 'N/A'}</TableCell>
-                    <TableCell>{a.guide_name || 'N/A'}</TableCell>
-                    <TableCell>{a.scheduled_date}</TableCell>
-                    <TableCell>{a.scheduled_time}</TableCell>
-                    <TableCell>{a.status || 'scheduled'}</TableCell>
-                    <TableCell>{a.notes || ''}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            activities.map((a) => {
+              const startTime = a.scheduled_time;
+              const endTime = a.computed_end_time || '';
+              const participantRows = (a.participants || []).map(p => ({
+                name: p.name,
+                group: p.groupName || '',
+                groupId: p.groupId ?? '',
+                pickups: (p.pickups || []).join(', '),
+                dropoffs: (p.dropoffs || []).join(', '),
+              }));
+              return (
+                <div key={`act-${a.id}`} className="border rounded-md">
+                  <div className="px-4 pt-4">
+                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                      <div><span className="font-medium text-foreground">Activity:</span> {a.activity_name || 'N/A'}</div>
+                      <div><span className="font-medium text-foreground">Guide:</span> {a.guide_name || 'N/A'}</div>
+                      <div><span className="font-medium text-foreground">Date:</span> {a.scheduled_date}</div>
+                      <div><span className="font-medium text-foreground">Start:</span> {startTime}</div>
+                      <div><span className="font-medium text-foreground">End:</span> {endTime || '—'}</div>
+                      <div><span className="font-medium text-foreground">Status:</span> {a.status || 'scheduled'}</div>
+                    </div>
+                    {a.notes ? (
+                      <div className="mt-2 text-sm"><span className="font-medium">Notes:</span> {a.notes}</div>
+                    ) : null}
+                  </div>
+                  <div className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Participant</TableHead>
+                          <TableHead>Group</TableHead>
+                          <TableHead>Group ID</TableHead>
+                          <TableHead>Pickup Location(s)</TableHead>
+                          <TableHead>Dropoff Location(s)</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {participantRows.length > 0 ? (
+                          participantRows.map((row, idx) => (
+                            <TableRow key={`act-${a.id}-p-${idx}`}>
+                              <TableCell className="font-medium">{row.name}</TableCell>
+                              <TableCell>{row.group}</TableCell>
+                              <TableCell>{row.groupId || '—'}</TableCell>
+                              <TableCell className="max-w-[320px] truncate" title={row.pickups}>{row.pickups || '—'}</TableCell>
+                              <TableCell className="max-w-[320px] truncate" title={row.dropoffs}>{row.dropoffs || '—'}</TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-sm text-muted-foreground">No participants linked via transport schedules.</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              );
+            })
           ) : (
             <p className="text-sm text-muted-foreground">No activities scheduled for today.</p>
           )}
