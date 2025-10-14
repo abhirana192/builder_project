@@ -204,8 +204,40 @@ const DailyActivityReport: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Daily Activity Report</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Daily Activity Report</h1>
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex flex-col">
+              <label className="text-xs text-muted-foreground mb-1">Date</label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="border rounded-md px-3 py-2 text-sm bg-background"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs text-muted-foreground mb-1">Start time (optional)</label>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="border rounded-md px-3 py-2 text-sm bg-background"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs text-muted-foreground mb-1">End time (optional)</label>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="border rounded-md px-3 py-2 text-sm bg-background"
+              />
+            </div>
+            <Button onClick={fetchReportData} variant="secondary">Apply</Button>
+          </div>
+        </div>
         <Button onClick={handleExportToExcel} disabled={loading || (arrivals.length + departures.length + activities.length + hotelCheckIns.length + hotelCheckOuts.length === 0)}>
           <Download className="mr-2 h-4 w-4" />
           Export to Excel
