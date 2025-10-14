@@ -119,6 +119,7 @@ export default function Activities() {
   const [packages, setPackages] = useState<TourPackage[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dbReadOnly, setDbReadOnly] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeTab, setActiveTab] = useState("schedule");
