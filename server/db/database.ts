@@ -389,6 +389,20 @@ export const queries = {
   `),
   updateBookingStatus: () => getDatabase().prepare('UPDATE bookings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'),
   
+  // Fetch bookings for a given group (by members), including invoice numbers
+  getBookingsForGroup: () => getDatabase().prepare(`
+    SELECT b.*, b.invoice_number,
+           g.first_name || ' ' || g.last_name as guest_name,
+           tp.name as tour_name
+    FROM bookings b
+    JOIN guests g ON b.guest_id = g.id
+    JOIN tour_packages tp ON b.tour_package_id = tp.id
+    WHERE b.guest_id IN (
+      SELECT gm.guest_id FROM group_members gm WHERE gm.group_id = ?
+    )
+    ORDER BY b.start_date DESC
+  `),
+
   // Tour package queries
   getAllTourPackages: () => getDatabase().prepare('SELECT * FROM tour_packages WHERE is_active = 1 ORDER BY name'),
   getTourPackageById: () => getDatabase().prepare('SELECT * FROM tour_packages WHERE id = ?'),
