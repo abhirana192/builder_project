@@ -598,6 +598,34 @@ export const queries = {
     WHERE tg.id = ?
   `),
 
+  // Groups report by date range (overlap using tour or arrival/departure dates)
+  getGroupsReportInRange: () => getDatabase().prepare(`
+    SELECT
+      tg.id,
+      tg.group_name,
+      tg.status,
+      tg.total_members,
+      tg.group_type,
+      tg.tour_start_date,
+      tg.tour_end_date,
+      tg.arrival_date,
+      tg.arrival_flight_number,
+      tg.arrival_flight_time,
+      tg.departure_date,
+      tg.departure_flight_number,
+      tg.departure_flight_time,
+      tg.group_notes,
+      g.first_name || ' ' || g.last_name AS leader_name,
+      g.email AS leader_email,
+      g.phone AS leader_phone
+    FROM tour_groups tg
+    LEFT JOIN guests g ON tg.group_leader_id = g.id
+    WHERE DATE(COALESCE(tg.tour_start_date, tg.arrival_date)) <= DATE(?)
+      AND DATE(COALESCE(tg.tour_end_date, tg.departure_date)) >= DATE(?)
+      AND (? IS NULL OR tg.status = ?)
+    ORDER BY COALESCE(tg.tour_start_date, tg.arrival_date) ASC, tg.group_name ASC
+  `),
+
   createGroup: () => getDatabase().prepare(`
     INSERT INTO tour_groups (group_name, group_leader_id, total_members, group_type, tour_start_date, tour_end_date, arrival_date, departure_date, arrival_flight_number, arrival_flight_time, arrival_notes, departure_flight_number, departure_flight_time, departure_notes, traveling_together, total_cost, amount_paid, deposit_amount, special_requirements, group_notes)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
