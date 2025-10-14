@@ -65,6 +65,7 @@ interface GroupReportItem {
   leader_name?: string | null;
   leader_email?: string | null;
   leader_phone?: string | null;
+  member_names?: string | null;
 }
 
 const DailyActivityReport: React.FC = () => {
