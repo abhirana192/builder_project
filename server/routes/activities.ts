@@ -153,7 +153,40 @@ export const getTodaysActivityInstances: RequestHandler = (req, res) => {
     };
 
     const detailed = instances.map(inst => {
-      const participants = inst.activity_name ? enrichWithParticipants(inst.activity_name) : [];
+      let participants = inst.activity_name ? enrichWithParticipants(inst.activity_name) : [];
+
+      // Fallback: if no transport-linked participants, derive from booking's guest group
+      if ((!participants || participants.length === 0) && inst.booking_id) {
+        try {
+          const bookingGuest = queries.getDatabase().prepare('SELECT guest_id FROM bookings WHERE id = ?').get(inst.booking_id) as { guest_id?: number } | undefined;
+          const guestId = bookingGuest?.guest_id;
+          if (guestId) {
+            const memberInfo = queries.getMemberWithGroupInfo().get(guestId) as { first_name?: string; last_name?: string; group_name?: string; group_id?: number | null } | undefined;
+            const groupId = memberInfo?.group_id ?? null;
+            if (groupId) {
+              const group = queries.getGroupById().get(groupId) as { group_name?: string } | undefined;
+              const members = queries.getGroupMembers().all(groupId) as { first_name?: string; last_name?: string; id: number }[];
+              participants = members.map(m => ({
+                id: m.id,
+                name: `${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Unknown Member',
+                groupName: group?.group_name || memberInfo?.group_name || 'Unknown Group',
+                groupId: groupId,
+                pickups: [],
+                dropoffs: [],
+              }));
+            } else {
+              // Single guest fallback
+              const g = queries.getGuestById().get(guestId) as { first_name?: string; last_name?: string } | undefined;
+              if (g) {
+                participants = [{ id: guestId, name: `${g.first_name || ''} ${g.last_name || ''}`.trim() || 'Unknown Guest', groupName: memberInfo?.group_name || '', groupId: memberInfo?.group_id ?? null, pickups: [], dropoffs: [] }];
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Fallback participants resolution failed for activity instance', inst.id, e);
+        }
+      }
+
       let computed_end_time: string | null = null;
       try {
         if (inst.scheduled_time && inst.duration_hours) {
