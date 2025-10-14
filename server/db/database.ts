@@ -68,6 +68,15 @@ export function initializeDatabase() {
 
 function runMigrations(database: Database.Database) {
   try {
+    // Ensure bookings has invoice_number column
+    const bookingsTableInfo = database.prepare("PRAGMA table_info(bookings)").all() as any[];
+    const bookingsColumnNames = bookingsTableInfo.map(col => col.name);
+    if (!bookingsColumnNames.includes('invoice_number')) {
+      console.log('Adding invoice_number column to bookings table...');
+      database.exec(`ALTER TABLE bookings ADD COLUMN invoice_number VARCHAR(4) UNIQUE`);
+      console.log('invoice_number column added successfully');
+    }
+
     // Check if group columns exist in guests table
     const guestsTableInfo = database.prepare("PRAGMA table_info(guests)").all() as any[];
     const guestsColumnNames = guestsTableInfo.map(col => col.name);
@@ -372,8 +381,11 @@ export const queries = {
     ORDER BY b.start_date
   `),
   createBooking: () => getDatabase().prepare(`
-    INSERT INTO bookings (booking_reference, guest_id, tour_package_id, number_of_guests, total_amount, booking_date, start_date, end_date, status, payment_status, special_requests, assigned_guide_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO bookings (
+      booking_reference, guest_id, tour_package_id, number_of_guests, total_amount,
+      booking_date, start_date, end_date, status, payment_status, special_requests,
+      assigned_guide_id, invoice_number
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
   updateBookingStatus: () => getDatabase().prepare('UPDATE bookings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'),
   
