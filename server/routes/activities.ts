@@ -81,6 +81,7 @@ export const getTodaysActivityInstances: RequestHandler = (req, res) => {
         a.max_participants,
         a.duration_hours,
         b.booking_reference,
+        b.guest_id as booking_guest_id,
         s.first_name || ' ' || s.last_name as guide_name
       FROM activity_instances ai
       LEFT JOIN activities a ON ai.activity_id = a.id
