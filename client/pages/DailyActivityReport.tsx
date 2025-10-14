@@ -299,6 +299,7 @@ const DailyActivityReport: React.FC = () => {
               name: p.name,
               group: p.groupName || '',
               groupId: p.groupId || '',
+              location: p.location || null,
             }));
             return `
             <div style="margin: 12px 0;">
@@ -310,6 +311,7 @@ const DailyActivityReport: React.FC = () => {
                     <th>Participant</th>
                     <th>Group</th>
                     <th>Group ID</th>
+                    <th>Location</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -318,9 +320,10 @@ const DailyActivityReport: React.FC = () => {
                       <td>${r.name}</td>
                       <td>${r.group}</td>
                       <td>${r.groupId || '—'}</td>
+                      <td>${r.location || 'NULL'}</td>
                     </tr>
                   `).join('') : `
-                    <tr><td colspan="3" class="muted">No participants for this activity.</td></tr>
+                    <tr><td colspan="4" class="muted">No participants for this activity.</td></tr>
                   `}
                 </tbody>
               </table>
