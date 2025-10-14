@@ -415,7 +415,6 @@ const DailyActivityReport: React.FC = () => {
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
-    printWindow.print();
   };
 
   const handlePrintReport = () => {
