@@ -50,7 +50,9 @@ import {
   createHotelBooking,
   updateBookingStatus,
   getHotelStats,
-  getGuestWithGroup
+  getGuestWithGroup,
+  getHotelCheckInsToday,
+  getHotelCheckOutsToday
 } from "./routes/hotel_bookings_simple";
 import {
   getAllBookings,
@@ -188,6 +190,8 @@ export function createServer() {
   app.patch("/api/hotel-bookings/:id/status", updateBookingStatus);
   app.get("/api/hotel-stats", getHotelStats);
   app.get("/api/guests/:guestId/group", getGuestWithGroup);
+  app.get("/api/hotels/checkins/today", getHotelCheckInsToday);
+  app.get("/api/hotels/checkouts/today", getHotelCheckOutsToday);
 
   // Daily Activity Report route
   app.get("/api/reports/daily-activity", getDailyActivityReport);
