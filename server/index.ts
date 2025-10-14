@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { initializeDatabase } from "./db/database";
+import { initializeDatabase, DATABASE_IS_READONLY } from "./db/database";
 import { handleDemo } from "./routes/demo";
 import { 
   getDashboardStats, 
