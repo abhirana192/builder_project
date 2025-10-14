@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Download, Plane, AlertTriangle, CalendarCheck, Hotel } from 'lucide-react';
+import { Download, Plane, AlertTriangle, CalendarCheck, Hotel, Users } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { fetchJSON } from '@/lib/fetch-utils';
 
