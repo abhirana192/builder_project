@@ -109,12 +109,12 @@ const DailyActivityReport: React.FC = () => {
       }
 
       const [arrivalsData, departuresData, activitiesData, checkInsData, checkOutsData, groupReportData] = await Promise.all([
-        fetchJSON(`/api/dashboard/arrivals?${params.toString()}`),
-        fetchJSON(`/api/dashboard/departures?${params.toString()}`),
-        fetchJSON(`/api/activities/today?${params.toString()}`).catch(() => []),
-        fetchJSON(`/api/hotels/checkins/today?${params.toString()}`).catch(() => []),
-        fetchJSON(`/api/hotels/checkouts/today?${params.toString()}`).catch(() => []),
-        fetchJSON(`/api/reports/group-bookings?start=${groupStart}&end=${groupEnd}&status=${encodeURIComponent(groupStatus)}`).catch(() => []),
+        fetchJSON(`/api/dashboard/arrivals?${params.toString()}`).catch((e) => { console.warn('Arrivals fetch failed', e); return []; }),
+        fetchJSON(`/api/dashboard/departures?${params.toString()}`).catch((e) => { console.warn('Departures fetch failed', e); return []; }),
+        fetchJSON(`/api/activities/today?${params.toString()}`).catch((e) => { console.warn('Activities fetch failed', e); return []; }),
+        fetchJSON(`/api/hotels/checkins/today?${params.toString()}`).catch((e) => { console.warn('Checkins fetch failed', e); return []; }),
+        fetchJSON(`/api/hotels/checkouts/today?${params.toString()}`).catch((e) => { console.warn('Checkouts fetch failed', e); return []; }),
+        fetchJSON(`/api/reports/group-bookings?start=${groupStart}&end=${groupEnd}&status=${encodeURIComponent(groupStatus)}`).catch((e) => { console.warn('Group report fetch failed', e); return []; }),
       ]);
 
       setArrivals(Array.isArray(arrivalsData) ? arrivalsData : []);
