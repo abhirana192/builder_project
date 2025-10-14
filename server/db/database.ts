@@ -23,7 +23,8 @@ function getDatabase() {
       } catch (writeError: any) {
         if (writeError.code === 'SQLITE_READONLY' || writeError.code === 'SQLITE_READONLY_DBMOVED') {
           console.warn('Database is read-only, creating in-memory database as fallback');
-          db.close();
+          DATABASE_IS_READONLY = true;
+          try { db.close(); } catch (e) {}
           db = new Database(':memory:');
           db.pragma('foreign_keys = ON');
         }
