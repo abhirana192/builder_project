@@ -6,6 +6,8 @@ const DB_PATH = join(process.cwd(), 'server', 'db', 'tourflow.db');
 
 let db: Database.Database | null = null;
 
+export let DATABASE_IS_READONLY = false;
+
 function getDatabase() {
   if (!db) {
     try {
