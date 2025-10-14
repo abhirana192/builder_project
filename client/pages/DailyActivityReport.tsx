@@ -365,14 +365,42 @@ const DailyActivityReport: React.FC = () => {
         <head>
           <meta charset="utf-8" />
           <title>Daily Report (Printable)</title>
-          <style>${style}</style>
+          <style>
+            ${style}
+            .toolbar { position: sticky; top: 0; background: #111827; color: #fff; padding: 8px 12px; margin: -20px -20px 12px; display: flex; gap: 8px; align-items: center; z-index: 10; }
+            .toolbar button { background: #374151; color: #fff; border: 0; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+            .toolbar .note { margin-left: auto; color: #d1d5db; font-size: 12px; }
+            #editable-root { outline: 2px dashed transparent; }
+            #editable-root[contenteditable="true"] { outline-color: #93c5fd; }
+            @media print { .toolbar { display: none; } }
+          </style>
         </head>
         <body>
+          <div class="toolbar">
+            <div style="font-weight:600">Edit Mode</div>
+            <button onclick="toggleEdit()" id="toggleBtn">Disable Edit</button>
+            <button onclick="window.print()">Print</button>
+            <button onclick="document.execCommand('undo')">Undo</button>
+            <button onclick="document.execCommand('redo')">Redo</button>
+            <span class="note">You can click and edit any text below before printing. Changes are not saved to the database.</span>
+          </div>
           <h1>Daily Activity Report</h1>
           <div class="meta">
             Generated on ${new Date().toLocaleString()} | Date: ${selectedDate} | Time: ${startTime} - ${endTime}
           </div>
-          ${sections.join('')}
+          <div id="editable-root" contenteditable="true">
+            ${sections.join('')}
+          </div>
+          <script>
+            function toggleEdit(){
+              var root = document.getElementById('editable-root');
+              var btn = document.getElementById('toggleBtn');
+              var enabled = root.getAttribute('contenteditable') === 'true';
+              root.setAttribute('contenteditable', enabled ? 'false' : 'true');
+              btn.textContent = enabled ? 'Enable Edit' : 'Disable Edit';
+              if (!enabled) root.focus();
+            }
+          </script>
         </body>
       </html>
     `;
