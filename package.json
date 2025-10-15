@@ -128,11 +128,15 @@
       {
         "from": "server/db/",
         "to": "server/db/",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "icon": "public/icon.ico"
     },
     "nsis": {
