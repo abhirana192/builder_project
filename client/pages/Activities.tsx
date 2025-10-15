@@ -926,6 +926,16 @@ export default function Activities() {
     return matchesSearch && matchesStatus && matchesDate;
   });
 
+  const sortedInstances = filteredInstances.slice().sort((a, b) => {
+    const toTs = (x: ActivityInstance) => {
+      const d = (x.scheduled_date || "").split("T")[0];
+      const t = x.scheduled_time || "00:00";
+      const dt = new Date(`${d}T${t}`);
+      return dt.getTime() || 0;
+    };
+    return toTs(b) - toTs(a);
+  });
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -1373,7 +1383,7 @@ export default function Activities() {
 
           {/* Activity Schedule */}
           <div className="grid gap-4">
-            {filteredInstances.map((instance) => {
+            {sortedInstances.map((instance) => {
               const StatusIcon = getStatusIcon(instance.status);
               const actualParticipantCount =
                 assignedParticipants[instance.id]?.length || 0;
