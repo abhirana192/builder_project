@@ -1062,14 +1062,39 @@ export default function GroupBookings() {
   };
 
   const filteredGroups = groups.filter(group => {
-    const matchesSearch = searchTerm === "" || 
+    // Text search by name or leader
+    const matchesSearch = searchTerm === "" ||
       group.group_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (group.leader_name && group.leader_name.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
+    // Group ID exact match if provided
+    const matchesId = !groupIdFilter || group.id === Number(groupIdFilter);
+
+    // Status filter
     const matchesStatus = statusFilter === "all" || group.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
+
+    // Date filter: show groups active on this date
+    const matchesDate = (() => {
+      if (!dateFilter) return true;
+      const date = new Date(dateFilter + 'T00:00:00');
+      // Prefer tour dates; fallback to arrival/departure when traveling together; else created_at only
+      const startStr = group.tour_start_date || (group.traveling_together ? group.arrival_date : undefined) || group.created_at;
+      const endStr = group.tour_end_date || (group.traveling_together ? group.departure_date : undefined) || group.created_at;
+      if (!startStr && !endStr) return true;
+      const start = startStr ? new Date(startStr) : null;
+      const end = endStr ? new Date(endStr) : null;
+      if (start && end) return date >= stripTime(start) && date <= stripTime(end);
+      if (start && !end) return date >= stripTime(start);
+      if (!start && end) return date <= stripTime(end);
+      return true;
+    })();
+
+    return matchesSearch && matchesId && matchesStatus && matchesDate;
   });
+
+  function stripTime(d: Date) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
 
   if (loading) {
     return (
