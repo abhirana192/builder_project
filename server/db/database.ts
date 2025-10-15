@@ -775,6 +775,21 @@ export const queries = {
         JOIN guests gu ON gm.guest_id = gu.id
         WHERE gm.group_id = tg.id
       ) AS member_names,
+      (
+        SELECT GROUP_CONCAT(DISTINCT h.name, ', ')
+        FROM hotel_bookings hb
+        JOIN hotels h ON h.id = hb.hotel_id
+        WHERE hb.guest_id IN (SELECT gm.guest_id FROM group_members gm WHERE gm.group_id = tg.id)
+          AND DATE(hb.check_in_date) <= DATE(?)
+          AND DATE(hb.check_out_date) >= DATE(?)
+      ) AS hotel_names,
+      (
+        SELECT GROUP_CONCAT(DISTINCT hb.room_number, ', ')
+        FROM hotel_bookings hb
+        WHERE hb.guest_id IN (SELECT gm.guest_id FROM group_members gm WHERE gm.group_id = tg.id)
+          AND DATE(hb.check_in_date) <= DATE(?)
+          AND DATE(hb.check_out_date) >= DATE(?)
+      ) AS room_numbers,
       g.first_name || ' ' || g.last_name AS leader_name,
       g.email AS leader_email,
       g.phone AS leader_phone
