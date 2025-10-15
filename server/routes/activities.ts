@@ -633,17 +633,29 @@ export const addParticipantsToActivity: RequestHandler = (req, res) => {
     const { id } = req.params;
     const { participant_ids } = req.body as { participant_ids?: number[] };
 
-    console.log("Adding participants to activity instance:", id);
-    console.log("Participant IDs:", participant_ids);
+    console.log("Syncing participants for activity instance:", id);
+    console.log("Desired participant IDs:", participant_ids);
 
     const db = queries.getDatabase();
     const insert = queries.addParticipantToActivity();
+    const remove = queries.removeParticipantFromActivity();
+
+    // Read current participants
+    const currentRows = db.prepare('SELECT guest_id FROM activity_participants WHERE activity_instance_id = ?').all(id) as Array<{ guest_id: number }>;
+    const currentSet = new Set<number>(currentRows.map(r => r.guest_id));
+    const desiredSet = new Set<number>((participant_ids || []).map(n => Number(n)));
+
+    // Compute diff
+    const toAdd: number[] = [];
+    const toRemove: number[] = [];
+    for (const d of desiredSet) if (!currentSet.has(d)) toAdd.push(d);
+    for (const c of currentSet) if (!desiredSet.has(c)) toRemove.push(c);
 
     db.prepare('BEGIN').run();
     try {
-      for (const pid of participant_ids || []) {
-        insert.run(id, pid);
-      }
+      for (const rid of toRemove) remove.run(id, rid);
+      for (const aid of toAdd) insert.run(id, aid);
+
       // Update attendance_count from persisted participants
       const countRow = db.prepare('SELECT COUNT(*) as c FROM activity_participants WHERE activity_instance_id = ?').get(id) as { c: number };
       db.prepare(`
@@ -657,7 +669,7 @@ export const addParticipantsToActivity: RequestHandler = (req, res) => {
       throw e;
     }
 
-    // Return the updated instance (callers that need participants should refetch /today)
+    // Return the updated instance
     const updatedInstance = db.prepare(`
       SELECT
         ai.*,
@@ -674,8 +686,8 @@ export const addParticipantsToActivity: RequestHandler = (req, res) => {
 
     res.json(updatedInstance);
   } catch (error) {
-    console.error("Error adding participants to activity:", error);
-    res.status(500).json({ error: "Failed to add participants to activity" });
+    console.error("Error syncing participants for activity:", error);
+    res.status(500).json({ error: "Failed to update participants for activity" });
   }
 };
 
