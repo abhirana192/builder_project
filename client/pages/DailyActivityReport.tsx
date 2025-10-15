@@ -96,6 +96,8 @@ interface GroupReportItem {
   leader_email?: string | null;
   leader_phone?: string | null;
   member_names?: string | null;
+  hotel_names?: string | null;
+  room_numbers?: string | null;
 }
 
 const DailyActivityReport: React.FC = () => {
@@ -279,10 +281,14 @@ const DailyActivityReport: React.FC = () => {
                 <th>Pax</th>
                 <th>Arrival</th>
                 <th>Departure</th>
+                <th>Hotel</th>
+                <th>Room</th>
                 <th>Leader</th>
                 <th>Contact</th>
                 <th>Members</th>
                 <th>Notes</th>
+                <th>Hotel</th>
+                <th>Room</th>
               </tr>
             </thead>
             <tbody>
@@ -309,6 +315,8 @@ const DailyActivityReport: React.FC = () => {
                   </td>
                   <td>${g.member_names || ""}</td>
                   <td>${g.group_notes || ""}</td>
+                  <td>${g.hotel_names || ""}</td>
+                  <td>${g.room_numbers || ""}</td>
                 </tr>
               `,
                 )
@@ -801,6 +809,8 @@ const DailyActivityReport: React.FC = () => {
                         </div>
                       </div>
                     </TableCell>
+                    <TableCell>{g.hotel_names || ""}</TableCell>
+                    <TableCell>{g.room_numbers || ""}</TableCell>
                     <TableCell>{g.leader_name || ""}</TableCell>
                     <TableCell>
                       <div className="text-sm">
