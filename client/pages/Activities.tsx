@@ -141,6 +141,7 @@ export default function Activities() {
   const [dbReadOnly, setDbReadOnly] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedDate, setSelectedDate] = useState("");
   const [activeTab, setActiveTab] = useState("schedule");
 
   // Dialog states
@@ -916,7 +917,13 @@ export default function Activities() {
         .includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || instance.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesDate = (() => {
+      if (!selectedDate) return true;
+      const raw = instance.scheduled_date || "";
+      const dateOnly = raw.includes("T") ? raw.split("T")[0] : (raw.split(" ")[0] || raw);
+      return dateOnly === selectedDate;
+    })();
+    return matchesSearch && matchesStatus && matchesDate;
   });
 
   if (loading) {
@@ -1340,6 +1347,12 @@ export default function Activities() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-[170px]"
+                  />
                   <Filter className="h-4 w-4 text-muted-foreground" />
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-[150px]">
