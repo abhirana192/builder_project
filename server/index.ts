@@ -118,7 +118,8 @@ import {
   seedActivitiesData,
   debugActivities,
   fixActivityInstancesTable,
-  addParticipantsToActivity
+  addParticipantsToActivity,
+  getActivityInstanceParticipants
 } from "./routes/activities";
 
 export function createServer() {
@@ -255,6 +256,7 @@ export function createServer() {
   app.patch("/api/activities/instances/:id/status", updateActivityInstanceStatus);
   app.patch("/api/activities/instances/:id/attendance", takeAttendance);
   app.post("/api/activities/instances/:id/participants", addParticipantsToActivity);
+  app.get("/api/activities/instances/:id/participants", getActivityInstanceParticipants);
   app.delete("/api/activities/instances/:id", deleteActivityInstance);
   app.get("/api/activities/guides", getAvailableGuides);
   app.get("/api/activities/packages", getTourPackages);
