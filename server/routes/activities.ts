@@ -691,6 +691,25 @@ export const addParticipantsToActivity: RequestHandler = (req, res) => {
   }
 };
 
+export const getActivityInstanceParticipants: RequestHandler = (req, res) => {
+  try {
+    const { id } = req.params;
+    const rows = queries.getParticipantsForActivityInstance().all(id) as Array<{ id: number; first_name: string; last_name: string; email?: string; group_id?: number | null; group_name?: string | null }>;
+    const participants = rows.map(r => ({
+      id: r.id,
+      first_name: r.first_name,
+      last_name: r.last_name,
+      email: r.email || '',
+      group_name: r.group_name || undefined,
+      activity_instance_id: Number(id)
+    }));
+    res.json(participants);
+  } catch (error) {
+    console.error("Error fetching participants for activity instance:", error);
+    res.status(500).json({ error: "Failed to fetch participants for activity instance" });
+  }
+};
+
 export const deleteActivityInstance: RequestHandler = (req, res) => {
   try {
     const { id } = req.params;
