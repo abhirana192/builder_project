@@ -513,6 +513,7 @@ export const queries = {
       ap.guest_id as id,
       g.first_name,
       g.last_name,
+      g.email,
       tg.id as group_id,
       tg.group_name
     FROM activity_participants ap
