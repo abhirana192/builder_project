@@ -770,6 +770,8 @@ const DailyActivityReport: React.FC = () => {
                   <TableHead>Pax</TableHead>
                   <TableHead>Arrival</TableHead>
                   <TableHead>Departure</TableHead>
+                  <TableHead>Hotel</TableHead>
+                  <TableHead>Room</TableHead>
                   <TableHead>Leader</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Members</TableHead>
