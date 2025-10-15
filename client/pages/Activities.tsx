@@ -610,9 +610,32 @@ export default function Activities() {
     setIsScheduleActivityOpen(true);
   };
 
-  const openViewActivity = (instance: ActivityInstance) => {
+  const openViewActivity = async (instance: ActivityInstance) => {
     setSelectedInstanceForView(instance);
-    setIsViewActivityOpen(true);
+    try {
+      const res = await fetch(`/api/activities/instances/${instance.id}/participants`);
+      if (res.ok) {
+        const assignedData = await res.json();
+        const normalizedAssigned = Array.isArray(assignedData)
+          ? assignedData.map((p: any) => ({
+              id: p.id,
+              first_name: p.first_name,
+              last_name: p.last_name,
+              email: p.email || "",
+              group_name: p.group_name || undefined,
+              activity_instance_id: instance.id,
+            }))
+          : [];
+        setAssignedParticipants((prev) => ({
+          ...prev,
+          [instance.id]: normalizedAssigned,
+        }));
+      }
+    } catch (e) {
+      console.warn("Failed to fetch participants for view:", e);
+    } finally {
+      setIsViewActivityOpen(true);
+    }
   };
 
   const openDeleteDialog = (instance: ActivityInstance) => {
