@@ -139,6 +139,7 @@ export default function Transport() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedDate, setSelectedDate] = useState("");
+  const [groupIdQuery, setGroupIdQuery] = useState("");
   const [activeTab, setActiveTab] = useState("schedules");
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
   const [scheduleType, setScheduleType] = useState<
@@ -3525,6 +3526,13 @@ export default function Transport() {
                     onChange={(e) => setSelectedDate(e.target.value)}
                     className="w-[170px]"
                   />
+                  <Input
+                    placeholder="Group ID"
+                    inputMode="numeric"
+                    value={groupIdQuery}
+                    onChange={(e) => setGroupIdQuery(e.target.value.replace(/[^0-9]/g, ""))}
+                    className="w-[130px]"
+                  />
                   <Filter className="h-4 w-4 text-muted-foreground" />
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-[150px]">
@@ -3591,6 +3599,11 @@ export default function Transport() {
                 const s = t.pickup;
                 // Status filter
                 if (statusFilter !== "all" && s.status !== statusFilter) return false;
+                // Group ID filter
+                if (groupIdQuery) {
+                  const gid = parseInt(groupIdQuery, 10);
+                  if (!gid || t.groupId !== gid) return false;
+                }
                 // Date filter
                 if (selectedDate) {
                   try {
@@ -3742,6 +3755,13 @@ export default function Transport() {
                     onChange={(e) => setSelectedDate(e.target.value)}
                     className="w-[170px]"
                   />
+                  <Input
+                    placeholder="Group ID"
+                    inputMode="numeric"
+                    value={groupIdQuery}
+                    onChange={(e) => setGroupIdQuery(e.target.value.replace(/[^0-9]/g, ""))}
+                    className="w-[130px]"
+                  />
                   <Filter className="h-4 w-4 text-muted-foreground" />
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-[150px]">
@@ -3807,6 +3827,11 @@ export default function Transport() {
                 const s = t.dropoff;
                 // Status filter
                 if (statusFilter !== "all" && s.status !== statusFilter) return false;
+                // Group ID filter
+                if (groupIdQuery) {
+                  const gid = parseInt(groupIdQuery, 10);
+                  if (!gid || t.groupId !== gid) return false;
+                }
                 // Date filter
                 if (selectedDate) {
                   try {
