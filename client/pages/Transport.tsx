@@ -1155,13 +1155,8 @@ export default function Transport() {
       map.set(gid, existing);
     }
 
-    // Sort by earliest time among pickup/dropoff
+    // Return unsorted; we'll sort per view (pickup/dropoff) newest->oldest
     const list = Array.from(map.values());
-    list.sort((a, b) => {
-      const aTime = a.pickup?.pickup_time || a.dropoff?.pickup_time || '';
-      const bTime = b.pickup?.pickup_time || b.dropoff?.pickup_time || '';
-      return new Date(aTime).getTime() - new Date(bTime).getTime();
-    });
     return list;
   };
 
