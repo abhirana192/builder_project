@@ -1,8 +1,8 @@
-import Database from 'better-sqlite3';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import Database from "better-sqlite3";
+import { readFileSync } from "fs";
+import { join } from "path";
 
-const DB_PATH = join(process.cwd(), 'server', 'db', 'tourflow.db');
+const DB_PATH = join(process.cwd(), "server", "db", "tourflow.db");
 
 let db: Database.Database | null = null;
 
@@ -12,27 +12,37 @@ function getDatabase() {
   if (!db) {
     try {
       db = new Database(DB_PATH);
-      db.pragma('foreign_keys = ON');
+      db.pragma("foreign_keys = ON");
 
       // Test write access by trying a simple operation
       try {
-        db.prepare('SELECT 1').get();
+        db.prepare("SELECT 1").get();
         // Try a write operation to test if database is writable
-        db.exec('CREATE TEMPORARY TABLE test_write (id INTEGER)');
-        db.exec('DROP TABLE test_write');
+        db.exec("CREATE TEMPORARY TABLE test_write (id INTEGER)");
+        db.exec("DROP TABLE test_write");
       } catch (writeError: any) {
-        if (writeError.code === 'SQLITE_READONLY' || writeError.code === 'SQLITE_READONLY_DBMOVED') {
-          console.warn('Database is read-only, creating in-memory database as fallback');
+        if (
+          writeError.code === "SQLITE_READONLY" ||
+          writeError.code === "SQLITE_READONLY_DBMOVED"
+        ) {
+          console.warn(
+            "Database is read-only, creating in-memory database as fallback",
+          );
           DATABASE_IS_READONLY = true;
-          try { db.close(); } catch (e) {}
-          db = new Database(':memory:');
-          db.pragma('foreign_keys = ON');
+          try {
+            db.close();
+          } catch (e) {}
+          db = new Database(":memory:");
+          db.pragma("foreign_keys = ON");
         }
       }
     } catch (error) {
-      console.error('Error opening database, falling back to in-memory:', error);
-      db = new Database(':memory:');
-      db.pragma('foreign_keys = ON');
+      console.error(
+        "Error opening database, falling back to in-memory:",
+        error,
+      );
+      db = new Database(":memory:");
+      db.pragma("foreign_keys = ON");
     }
   }
   return db;
@@ -43,65 +53,84 @@ export function initializeDatabase() {
     const database = getDatabase();
 
     // Read and execute main schema
-    const schema = readFileSync(join(process.cwd(), 'server', 'db', 'schema.sql'), 'utf8');
+    const schema = readFileSync(
+      join(process.cwd(), "server", "db", "schema.sql"),
+      "utf8",
+    );
     database.exec(schema);
 
     // Read and execute groups schema
-    const groupsSchema = readFileSync(join(process.cwd(), 'server', 'db', 'groups_schema.sql'), 'utf8');
+    const groupsSchema = readFileSync(
+      join(process.cwd(), "server", "db", "groups_schema.sql"),
+      "utf8",
+    );
     database.exec(groupsSchema);
 
     // Run migrations for existing databases
     runMigrations(database);
 
     // Check if database is already seeded
-    const staffCount = database.prepare('SELECT COUNT(*) as count FROM staff').get() as { count: number };
+    const staffCount = database
+      .prepare("SELECT COUNT(*) as count FROM staff")
+      .get() as { count: number };
 
     if (staffCount.count === 0) {
       // Read and execute seed data
-      const seedData = readFileSync(join(process.cwd(), 'server', 'db', 'seed.sql'), 'utf8');
+      const seedData = readFileSync(
+        join(process.cwd(), "server", "db", "seed.sql"),
+        "utf8",
+      );
       database.exec(seedData);
-      console.log('Database initialized with seed data');
+      console.log("Database initialized with seed data");
     } else {
-      console.log('Database already contains data');
+      console.log("Database already contains data");
     }
   } catch (error) {
-    console.error('Error initializing database:', error);
+    console.error("Error initializing database:", error);
   }
 }
 
 function runMigrations(database: Database.Database) {
   try {
     // Ensure bookings has invoice_number column
-    const bookingsTableInfo = database.prepare("PRAGMA table_info(bookings)").all() as any[];
-    const bookingsColumnNames = bookingsTableInfo.map(col => col.name);
-    if (!bookingsColumnNames.includes('invoice_number')) {
-      console.log('Adding invoice_number column to bookings table...');
-      database.exec(`ALTER TABLE bookings ADD COLUMN invoice_number VARCHAR(4) UNIQUE`);
-      console.log('invoice_number column added successfully');
+    const bookingsTableInfo = database
+      .prepare("PRAGMA table_info(bookings)")
+      .all() as any[];
+    const bookingsColumnNames = bookingsTableInfo.map((col) => col.name);
+    if (!bookingsColumnNames.includes("invoice_number")) {
+      console.log("Adding invoice_number column to bookings table...");
+      database.exec(
+        `ALTER TABLE bookings ADD COLUMN invoice_number VARCHAR(4) UNIQUE`,
+      );
+      console.log("invoice_number column added successfully");
     }
 
     // Check if group columns exist in guests table
-    const guestsTableInfo = database.prepare("PRAGMA table_info(guests)").all() as any[];
-    const guestsColumnNames = guestsTableInfo.map(col => col.name);
+    const guestsTableInfo = database
+      .prepare("PRAGMA table_info(guests)")
+      .all() as any[];
+    const guestsColumnNames = guestsTableInfo.map((col) => col.name);
 
     // Add group columns if they don't exist
-    if (!guestsColumnNames.includes('is_group_leader')) {
-      console.log('Adding group columns to guests table...');
+    if (!guestsColumnNames.includes("is_group_leader")) {
+      console.log("Adding group columns to guests table...");
       database.exec(`
         ALTER TABLE guests ADD COLUMN is_group_leader BOOLEAN DEFAULT FALSE;
         ALTER TABLE guests ADD COLUMN group_size INTEGER DEFAULT 1;
         ALTER TABLE guests ADD COLUMN group_name VARCHAR(255);
       `);
-      console.log('Group columns added successfully');
+      console.log("Group columns added successfully");
     }
 
     // Check if flight columns exist in tour_groups table
-    const tourGroupsTableInfo = database.prepare("PRAGMA table_info(tour_groups)").all() as any[];
-    const tourGroupsColumnNames = tourGroupsTableInfo.map(col => col.name);
+    const tourGroupsTableInfo = database
+      .prepare("PRAGMA table_info(tour_groups)")
+      .all() as any[];
+    const tourGroupsColumnNames = tourGroupsTableInfo.map((col) => col.name);
 
     // Add flight columns if they don't exist
-    if (!tourGroupsColumnNames.includes('arrival_flight_number')) {
-      console.log('Adding flight information columns to tour_groups table...');
+    if (!tourGroupsColumnNames.includes("arrival_flight_number")) {
+      console.log("Adding flight information columns to tour_groups table...");
       database.exec(`
         ALTER TABLE tour_groups ADD COLUMN arrival_flight_number VARCHAR(20);
         ALTER TABLE tour_groups ADD COLUMN arrival_flight_time VARCHAR(10);
@@ -110,35 +139,41 @@ function runMigrations(database: Database.Database) {
         ALTER TABLE tour_groups ADD COLUMN departure_flight_time VARCHAR(10);
         ALTER TABLE tour_groups ADD COLUMN departure_notes TEXT;
       `);
-      console.log('Flight information columns added successfully');
+      console.log("Flight information columns added successfully");
     }
 
     // Add financial columns if they don't exist
-    if (!tourGroupsColumnNames.includes('total_cost')) {
-      console.log('Adding financial columns to tour_groups table...');
+    if (!tourGroupsColumnNames.includes("total_cost")) {
+      console.log("Adding financial columns to tour_groups table...");
       database.exec(`
         ALTER TABLE tour_groups ADD COLUMN total_cost DECIMAL(10,2) DEFAULT 0.00;
         ALTER TABLE tour_groups ADD COLUMN amount_paid DECIMAL(10,2) DEFAULT 0.00;
         ALTER TABLE tour_groups ADD COLUMN deposit_amount DECIMAL(10,2) DEFAULT 0.00;
       `);
-      console.log('Financial columns added successfully');
+      console.log("Financial columns added successfully");
     }
 
     // Add traveling_together column if it doesn't exist
-    if (!tourGroupsColumnNames.includes('traveling_together')) {
-      console.log('Adding traveling_together column to tour_groups table...');
+    if (!tourGroupsColumnNames.includes("traveling_together")) {
+      console.log("Adding traveling_together column to tour_groups table...");
       database.exec(`
         ALTER TABLE tour_groups ADD COLUMN traveling_together BOOLEAN DEFAULT TRUE;
       `);
-      console.log('Traveling together column added successfully');
+      console.log("Traveling together column added successfully");
     }
 
     // Add individual flight columns to guests table if they don't exist
-    const guestsFlightTableInfo = database.prepare("PRAGMA table_info(guests)").all() as any[];
-    const guestsFlightColumnNames = guestsFlightTableInfo.map(col => col.name);
+    const guestsFlightTableInfo = database
+      .prepare("PRAGMA table_info(guests)")
+      .all() as any[];
+    const guestsFlightColumnNames = guestsFlightTableInfo.map(
+      (col) => col.name,
+    );
 
-    if (!guestsFlightColumnNames.includes('arrival_flight_number')) {
-      console.log('Adding individual flight information columns to guests table...');
+    if (!guestsFlightColumnNames.includes("arrival_flight_number")) {
+      console.log(
+        "Adding individual flight information columns to guests table...",
+      );
       database.exec(`
         ALTER TABLE guests ADD COLUMN arrival_flight_number VARCHAR(20);
         ALTER TABLE guests ADD COLUMN arrival_flight_time VARCHAR(10);
@@ -147,55 +182,57 @@ function runMigrations(database: Database.Database) {
         ALTER TABLE guests ADD COLUMN departure_flight_time VARCHAR(10);
         ALTER TABLE guests ADD COLUMN departure_notes TEXT;
       `);
-      console.log('Individual flight information columns added successfully');
+      console.log("Individual flight information columns added successfully");
     }
 
     // Add individual travel date columns to guests table if they don't exist
-    if (!guestsFlightColumnNames.includes('arrival_date')) {
-      console.log('Adding individual travel date columns to guests table...');
+    if (!guestsFlightColumnNames.includes("arrival_date")) {
+      console.log("Adding individual travel date columns to guests table...");
       database.exec(`
         ALTER TABLE guests ADD COLUMN arrival_date DATE;
         ALTER TABLE guests ADD COLUMN departure_date DATE;
       `);
-      console.log('Individual travel date columns added successfully');
+      console.log("Individual travel date columns added successfully");
     }
 
     // Add tour date columns to tour_groups table if they don't exist
-    if (!tourGroupsColumnNames.includes('tour_start_date')) {
-      console.log('Adding tour date columns to tour_groups table...');
+    if (!tourGroupsColumnNames.includes("tour_start_date")) {
+      console.log("Adding tour date columns to tour_groups table...");
       database.exec(`
         ALTER TABLE tour_groups ADD COLUMN tour_start_date DATE;
         ALTER TABLE tour_groups ADD COLUMN tour_end_date DATE;
       `);
-      console.log('Tour date columns added successfully');
+      console.log("Tour date columns added successfully");
     }
 
     // Add status column if it doesn't exist
-    if (!tourGroupsColumnNames.includes('status')) {
-      console.log('Adding status column to tour_groups table...');
+    if (!tourGroupsColumnNames.includes("status")) {
+      console.log("Adding status column to tour_groups table...");
       database.exec(`
         ALTER TABLE tour_groups ADD COLUMN status VARCHAR(20) DEFAULT 'active';
       `);
-      console.log('Status column added successfully');
+      console.log("Status column added successfully");
     }
 
     // Add refund tracking columns if they don't exist
-    if (!tourGroupsColumnNames.includes('refund_amount')) {
-      console.log('Adding refund tracking columns to tour_groups table...');
+    if (!tourGroupsColumnNames.includes("refund_amount")) {
+      console.log("Adding refund tracking columns to tour_groups table...");
       database.exec(`
         ALTER TABLE tour_groups ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00;
         ALTER TABLE tour_groups ADD COLUMN cancelled_at TIMESTAMP;
       `);
-      console.log('Refund tracking columns added successfully');
+      console.log("Refund tracking columns added successfully");
     }
 
     // Add group_transport_schedules table if it doesn't exist
-    const groupTransportTableExists = database.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='group_transport_schedules'"
-    ).get();
+    const groupTransportTableExists = database
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='group_transport_schedules'",
+      )
+      .get();
 
     if (!groupTransportTableExists) {
-      console.log('Creating group_transport_schedules table...');
+      console.log("Creating group_transport_schedules table...");
       database.exec(`
         CREATE TABLE group_transport_schedules (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -217,16 +254,18 @@ function runMigrations(database: Database.Database) {
           FOREIGN KEY (driver_id) REFERENCES staff(id)
         );
       `);
-      console.log('Group transport schedules table created successfully');
+      console.log("Group transport schedules table created successfully");
     }
 
     // Add hotel_bookings table if it doesn't exist
-    const hotelBookingsTableExists = database.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='hotel_bookings'"
-    ).get();
+    const hotelBookingsTableExists = database
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='hotel_bookings'",
+      )
+      .get();
 
     if (!hotelBookingsTableExists) {
-      console.log('Creating hotel_bookings table...');
+      console.log("Creating hotel_bookings table...");
       database.exec(`
         CREATE TABLE hotel_bookings (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -260,53 +299,70 @@ function runMigrations(database: Database.Database) {
         ('HB-2024-002', 'Lars Andersen', 2, '201', 'Family Room', '2024-03-25', '2024-03-26', 2, 200.00, 200.00, 'confirmed'),
         ('HB-2024-003', 'Maria Garcia', 3, '101', 'Classic Double', '2024-04-01', '2024-04-05', 2, 200.00, 800.00, 'confirmed');
       `);
-      console.log('Hotel bookings table created successfully');
+      console.log("Hotel bookings table created successfully");
     } else {
       // Add group_name and guest_id columns if they don't exist
-      const hotelBookingsTableInfo = database.prepare("PRAGMA table_info(hotel_bookings)").all() as any[];
-      const columnNames = hotelBookingsTableInfo.map(col => col.name);
+      const hotelBookingsTableInfo = database
+        .prepare("PRAGMA table_info(hotel_bookings)")
+        .all() as any[];
+      const columnNames = hotelBookingsTableInfo.map((col) => col.name);
 
-      if (!columnNames.includes('guest_name')) {
-        console.log('Adding guest_name column to hotel_bookings table...');
-        database.exec(`ALTER TABLE hotel_bookings ADD COLUMN guest_name VARCHAR(255) NOT NULL DEFAULT 'Unknown Guest';`);
-        console.log('Guest_name column added successfully');
+      if (!columnNames.includes("guest_name")) {
+        console.log("Adding guest_name column to hotel_bookings table...");
+        database.exec(
+          `ALTER TABLE hotel_bookings ADD COLUMN guest_name VARCHAR(255) NOT NULL DEFAULT 'Unknown Guest';`,
+        );
+        console.log("Guest_name column added successfully");
       }
 
-      if (!columnNames.includes('group_name')) {
-        console.log('Adding group_name column to hotel_bookings table...');
-        database.exec(`ALTER TABLE hotel_bookings ADD COLUMN group_name VARCHAR(255);`);
-        console.log('Group_name column added successfully');
+      if (!columnNames.includes("group_name")) {
+        console.log("Adding group_name column to hotel_bookings table...");
+        database.exec(
+          `ALTER TABLE hotel_bookings ADD COLUMN group_name VARCHAR(255);`,
+        );
+        console.log("Group_name column added successfully");
       }
 
-      if (!columnNames.includes('guest_id')) {
-        console.log('Adding guest_id column to hotel_bookings table...');
-        database.exec(`ALTER TABLE hotel_bookings ADD COLUMN guest_id INTEGER REFERENCES guests(id);`);
-        console.log('Guest_id column added successfully');
+      if (!columnNames.includes("guest_id")) {
+        console.log("Adding guest_id column to hotel_bookings table...");
+        database.exec(
+          `ALTER TABLE hotel_bookings ADD COLUMN guest_id INTEGER REFERENCES guests(id);`,
+        );
+        console.log("Guest_id column added successfully");
       }
     }
 
     // Clean up any leftover backup tables
     try {
-      database.exec('DROP TABLE IF EXISTS guests_backup');
+      database.exec("DROP TABLE IF EXISTS guests_backup");
     } catch (e) {
       // Ignore errors when dropping backup table
     }
   } catch (error) {
-    console.error('Error running migrations:', error);
+    console.error("Error running migrations:", error);
   }
 }
 
 // Database helper functions
 export const queries = {
   // Staff queries
-  getAllStaff: () => getDatabase().prepare('SELECT * FROM staff WHERE is_active = 1 ORDER BY last_name, first_name'),
-  getStaffById: () => getDatabase().prepare('SELECT * FROM staff WHERE id = ?'),
-  getStaffByEmail: () => getDatabase().prepare('SELECT * FROM staff WHERE email = ?'),
-  
+  getAllStaff: () =>
+    getDatabase().prepare(
+      "SELECT * FROM staff WHERE is_active = 1 ORDER BY last_name, first_name",
+    ),
+  getStaffById: () => getDatabase().prepare("SELECT * FROM staff WHERE id = ?"),
+  getStaffByEmail: () =>
+    getDatabase().prepare("SELECT * FROM staff WHERE email = ?"),
+
   // Guest queries
-  getAllGuests: () => getDatabase().prepare('SELECT * FROM guests ORDER BY last_name, first_name'),
-  getGuestById: () => getDatabase().prepare('SELECT * FROM guests WHERE id = ?'),
-  getMemberWithGroupInfo: () => getDatabase().prepare(`
+  getAllGuests: () =>
+    getDatabase().prepare(
+      "SELECT * FROM guests ORDER BY last_name, first_name",
+    ),
+  getGuestById: () =>
+    getDatabase().prepare("SELECT * FROM guests WHERE id = ?"),
+  getMemberWithGroupInfo: () =>
+    getDatabase().prepare(`
     SELECT
       g.first_name,
       g.last_name,
@@ -317,7 +373,8 @@ export const queries = {
     LEFT JOIN tour_groups tg ON gm.group_id = tg.id
     WHERE g.id = ?
   `),
-  getGuestsWithGroups: () => getDatabase().prepare(`
+  getGuestsWithGroups: () =>
+    getDatabase().prepare(`
     SELECT DISTINCT
       g.id,
       g.first_name,
@@ -350,17 +407,20 @@ export const queries = {
     LEFT JOIN tour_groups tg ON gm.group_id = tg.id
     ORDER BY g.last_name, g.first_name
   `),
-  createGuest: () => getDatabase().prepare(`
+  createGuest: () =>
+    getDatabase().prepare(`
     INSERT INTO guests (first_name, last_name, email, phone, passport_number, nationality, date_of_birth, dietary_restrictions, emergency_contact_name, emergency_contact_phone, notes, arrival_date, departure_date, arrival_flight_number, arrival_flight_time, arrival_notes, departure_flight_number, departure_flight_time, departure_notes, is_group_leader, group_size, group_name)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
-  updateGuest: () => getDatabase().prepare(`
+  updateGuest: () =>
+    getDatabase().prepare(`
     UPDATE guests SET first_name = ?, last_name = ?, email = ?, phone = ?, passport_number = ?, nationality = ?, date_of_birth = ?, dietary_restrictions = ?, emergency_contact_name = ?, emergency_contact_phone = ?, notes = ?, arrival_date = ?, departure_date = ?, arrival_flight_number = ?, arrival_flight_time = ?, arrival_notes = ?, departure_flight_number = ?, departure_flight_time = ?, departure_notes = ?, is_group_leader = ?, group_size = ?, group_name = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `),
-  
+
   // Booking queries
-  getAllBookings: () => getDatabase().prepare(`
+  getAllBookings: () =>
+    getDatabase().prepare(`
     SELECT b.*, b.invoice_number, g.first_name || ' ' || g.last_name as guest_name, tp.name as tour_name, s.first_name || ' ' || s.last_name as guide_name
     FROM bookings b
     JOIN guests g ON b.guest_id = g.id
@@ -368,7 +428,8 @@ export const queries = {
     LEFT JOIN staff s ON b.assigned_guide_id = s.id
     ORDER BY b.start_date DESC
   `),
-  getBookingById: () => getDatabase().prepare(`
+  getBookingById: () =>
+    getDatabase().prepare(`
     SELECT b.*, b.invoice_number, g.first_name || ' ' || g.last_name as guest_name, g.email as guest_email, tp.name as tour_name, s.first_name || ' ' || s.last_name as guide_name
     FROM bookings b
     JOIN guests g ON b.guest_id = g.id
@@ -376,7 +437,8 @@ export const queries = {
     LEFT JOIN staff s ON b.assigned_guide_id = s.id
     WHERE b.id = ?
   `),
-  getBookingsByStatus: () => getDatabase().prepare(`
+  getBookingsByStatus: () =>
+    getDatabase().prepare(`
     SELECT b.*, b.invoice_number, g.first_name || ' ' || g.last_name as guest_name, tp.name as tour_name
     FROM bookings b
     JOIN guests g ON b.guest_id = g.id
@@ -384,17 +446,22 @@ export const queries = {
     WHERE b.status = ?
     ORDER BY b.start_date
   `),
-  createBooking: () => getDatabase().prepare(`
+  createBooking: () =>
+    getDatabase().prepare(`
     INSERT INTO bookings (
       booking_reference, guest_id, tour_package_id, number_of_guests, total_amount,
       booking_date, start_date, end_date, status, payment_status, special_requests,
       assigned_guide_id, invoice_number
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
-  updateBookingStatus: () => getDatabase().prepare('UPDATE bookings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'),
-  
+  updateBookingStatus: () =>
+    getDatabase().prepare(
+      "UPDATE bookings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    ),
+
   // Fetch bookings for a given group (by members), including invoice numbers
-  getBookingsForGroup: () => getDatabase().prepare(`
+  getBookingsForGroup: () =>
+    getDatabase().prepare(`
     SELECT b.*, b.invoice_number,
            g.first_name || ' ' || g.last_name as guest_name,
            tp.name as tour_name
@@ -408,17 +475,30 @@ export const queries = {
   `),
 
   // Tour package queries
-  getAllTourPackages: () => getDatabase().prepare('SELECT * FROM tour_packages WHERE is_active = 1 ORDER BY name'),
-  getTourPackageById: () => getDatabase().prepare('SELECT * FROM tour_packages WHERE id = ?'),
-  
+  getAllTourPackages: () =>
+    getDatabase().prepare(
+      "SELECT * FROM tour_packages WHERE is_active = 1 ORDER BY name",
+    ),
+  getTourPackageById: () =>
+    getDatabase().prepare("SELECT * FROM tour_packages WHERE id = ?"),
+
   // Vehicle queries
-  getAllVehicles: () => getDatabase().prepare('SELECT * FROM vehicles ORDER BY vehicle_number'),
-  getVehicleById: () => getDatabase().prepare('SELECT * FROM vehicles WHERE id = ?'),
-  getAvailableVehicles: () => getDatabase().prepare('SELECT * FROM vehicles WHERE status = "available" ORDER BY vehicle_number'),
-  updateVehicleStatus: () => getDatabase().prepare('UPDATE vehicles SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'),
-  
+  getAllVehicles: () =>
+    getDatabase().prepare("SELECT * FROM vehicles ORDER BY vehicle_number"),
+  getVehicleById: () =>
+    getDatabase().prepare("SELECT * FROM vehicles WHERE id = ?"),
+  getAvailableVehicles: () =>
+    getDatabase().prepare(
+      'SELECT * FROM vehicles WHERE status = "available" ORDER BY vehicle_number',
+    ),
+  updateVehicleStatus: () =>
+    getDatabase().prepare(
+      "UPDATE vehicles SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    ),
+
   // Transport schedule queries (legacy)
-  getTransportSchedules: () => getDatabase().prepare(`
+  getTransportSchedules: () =>
+    getDatabase().prepare(`
     SELECT ts.*, v.vehicle_number, v.vehicle_type, s.first_name || ' ' || s.last_name as driver_name, b.booking_reference
     FROM transport_schedules ts
     JOIN vehicles v ON ts.vehicle_id = v.id
@@ -426,7 +506,8 @@ export const queries = {
     JOIN bookings b ON ts.booking_id = b.id
     ORDER BY ts.pickup_time
   `),
-  getTodaysTransport: () => getDatabase().prepare(`
+  getTodaysTransport: () =>
+    getDatabase().prepare(`
     SELECT ts.*, v.vehicle_number, v.vehicle_type, s.first_name || ' ' || s.last_name as driver_name, b.booking_reference
     FROM transport_schedules ts
     JOIN vehicles v ON ts.vehicle_id = v.id
@@ -437,7 +518,8 @@ export const queries = {
   `),
 
   // Group transport schedule queries
-  getGroupTransportSchedules: () => getDatabase().prepare(`
+  getGroupTransportSchedules: () =>
+    getDatabase().prepare(`
     SELECT gts.*, v.vehicle_number, v.vehicle_type, s.first_name || ' ' || s.last_name as driver_name
     FROM group_transport_schedules gts
     JOIN vehicles v ON gts.vehicle_id = v.id
@@ -445,14 +527,16 @@ export const queries = {
     ORDER BY gts.pickup_time
   `),
 
-  createGroupTransportSchedule: () => getDatabase().prepare(`
+  createGroupTransportSchedule: () =>
+    getDatabase().prepare(`
     INSERT INTO group_transport_schedules (
       transport_type, activity_name, vehicle_id, driver_id, pickup_location, pickup_time,
       dropoff_location, estimated_dropoff_time, passenger_count, groups_data, notes
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
 
-  updateGroupTransportSchedule: () => getDatabase().prepare(`
+  updateGroupTransportSchedule: () =>
+    getDatabase().prepare(`
     UPDATE group_transport_schedules
     SET transport_type = ?, activity_name = ?, vehicle_id = ?, driver_id = ?, pickup_location = ?,
         pickup_time = ?, dropoff_location = ?, estimated_dropoff_time = ?, passenger_count = ?,
@@ -460,34 +544,40 @@ export const queries = {
     WHERE id = ?
   `),
 
-  updateGroupTransportScheduleStatus: () => getDatabase().prepare(`
+  updateGroupTransportScheduleStatus: () =>
+    getDatabase().prepare(`
     UPDATE group_transport_schedules
     SET status = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `),
 
-  updateGroupTransportScheduleDropoffLocation: () => getDatabase().prepare(`
+  updateGroupTransportScheduleDropoffLocation: () =>
+    getDatabase().prepare(`
     UPDATE group_transport_schedules
     SET dropoff_location = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `),
 
-  updateGroupTransportSchedulePickupLocation: () => getDatabase().prepare(`
+  updateGroupTransportSchedulePickupLocation: () =>
+    getDatabase().prepare(`
     UPDATE group_transport_schedules
     SET pickup_location = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `),
 
-  deleteGroupTransportSchedule: () => getDatabase().prepare('DELETE FROM group_transport_schedules WHERE id = ?'),
+  deleteGroupTransportSchedule: () =>
+    getDatabase().prepare("DELETE FROM group_transport_schedules WHERE id = ?"),
 
   // Fetch flight times for transport scheduling
-  getGroupFlightTimes: () => getDatabase().prepare(`
+  getGroupFlightTimes: () =>
+    getDatabase().prepare(`
     SELECT id, group_name, arrival_date, arrival_flight_time, departure_date, departure_flight_time
     FROM tour_groups
     WHERE id = ?
   `),
 
-  getMemberFlightDetailsForTransport: () => getDatabase().prepare(`
+  getMemberFlightDetailsForTransport: () =>
+    getDatabase().prepare(`
     SELECT
       g.arrival_flight_time,
       g.departure_flight_time,
@@ -499,16 +589,18 @@ export const queries = {
     WHERE g.id = ?
   `),
 
-  getMemberFlightTimes: () => getDatabase().prepare(`
+  getMemberFlightTimes: () =>
+    getDatabase().prepare(`
     SELECT gm.id, gm.first_name, gm.last_name, gm.arrival_flight_time, gm.departure_flight_time,
            tg.arrival_date, tg.departure_date
     FROM group_members gm
     JOIN tour_groups tg ON gm.group_id = tg.id
     WHERE gm.id = ?
   `),
-  
+
   // Activity participants queries
-  getParticipantsForActivityInstance: () => getDatabase().prepare(`
+  getParticipantsForActivityInstance: () =>
+    getDatabase().prepare(`
     SELECT
       ap.guest_id as id,
       g.first_name,
@@ -523,49 +615,74 @@ export const queries = {
     WHERE ap.activity_instance_id = ?
     ORDER BY g.last_name, g.first_name
   `),
-  addParticipantToActivity: () => getDatabase().prepare(`
+  addParticipantToActivity: () =>
+    getDatabase().prepare(`
     INSERT OR IGNORE INTO activity_participants (activity_instance_id, guest_id)
     VALUES (?, ?)
   `),
-  removeParticipantFromActivity: () => getDatabase().prepare(`
+  removeParticipantFromActivity: () =>
+    getDatabase().prepare(`
     DELETE FROM activity_participants WHERE activity_instance_id = ? AND guest_id = ?
   `),
 
   // Hotel queries
-  getAllHotels: () => getDatabase().prepare('SELECT * FROM hotels ORDER BY name'),
-  getHotelById: () => getDatabase().prepare('SELECT * FROM hotels WHERE id = ?'),
-  getHotelRooms: () => getDatabase().prepare('SELECT * FROM hotel_rooms WHERE hotel_id = ? ORDER BY room_number'),
-  createHotel: () => getDatabase().prepare(`
+  getAllHotels: () =>
+    getDatabase().prepare("SELECT * FROM hotels ORDER BY name"),
+  getHotelById: () =>
+    getDatabase().prepare("SELECT * FROM hotels WHERE id = ?"),
+  getHotelRooms: () =>
+    getDatabase().prepare(
+      "SELECT * FROM hotel_rooms WHERE hotel_id = ? ORDER BY room_number",
+    ),
+  createHotel: () =>
+    getDatabase().prepare(`
     INSERT INTO hotels (name, address, phone, email, star_rating, total_rooms, contact_person, special_rates, amenities, check_in_time, check_out_time, is_partner)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
-  updateHotel: () => getDatabase().prepare(`
+  updateHotel: () =>
+    getDatabase().prepare(`
     UPDATE hotels SET name = ?, address = ?, phone = ?, email = ?, star_rating = ?, total_rooms = ?, contact_person = ?, special_rates = ?, amenities = ?, check_in_time = ?, check_out_time = ?, is_partner = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `),
-  deleteHotel: () => getDatabase().prepare('DELETE FROM hotels WHERE id = ?'),
-  deleteHotelBooking: () => getDatabase().prepare('DELETE FROM hotel_bookings WHERE id = ?'),
+  deleteHotel: () => getDatabase().prepare("DELETE FROM hotels WHERE id = ?"),
+  deleteHotelBooking: () =>
+    getDatabase().prepare("DELETE FROM hotel_bookings WHERE id = ?"),
 
   // Hotel room queries
-  createHotelRoom: () => getDatabase().prepare(`
+  createHotelRoom: () =>
+    getDatabase().prepare(`
     INSERT INTO hotel_rooms (hotel_id, room_number, room_type, capacity, rate_per_night, amenities, status)
     VALUES (?, ?, ?, ?, ?, ?, 'available')
   `),
-  updateHotelRoom: () => getDatabase().prepare(`
+  updateHotelRoom: () =>
+    getDatabase().prepare(`
     UPDATE hotel_rooms SET room_number = ?, room_type = ?, capacity = ?, rate_per_night = ?, amenities = ?, status = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `),
-  deleteHotelRoom: () => getDatabase().prepare('DELETE FROM hotel_rooms WHERE id = ?'),
-  updateRoomStatus: () => getDatabase().prepare('UPDATE hotel_rooms SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'),
-  
+  deleteHotelRoom: () =>
+    getDatabase().prepare("DELETE FROM hotel_rooms WHERE id = ?"),
+  updateRoomStatus: () =>
+    getDatabase().prepare(
+      "UPDATE hotel_rooms SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    ),
+
   // Equipment queries
-  getAllEquipment: () => getDatabase().prepare('SELECT * FROM equipment ORDER BY category, name'),
-  getEquipmentById: () => getDatabase().prepare('SELECT * FROM equipment WHERE id = ?'),
-  getAvailableEquipment: () => getDatabase().prepare('SELECT * FROM equipment WHERE is_available = 1 ORDER BY category, name'),
-  updateEquipmentStatus: () => getDatabase().prepare('UPDATE equipment SET is_available = ?, condition_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'),
-  
+  getAllEquipment: () =>
+    getDatabase().prepare("SELECT * FROM equipment ORDER BY category, name"),
+  getEquipmentById: () =>
+    getDatabase().prepare("SELECT * FROM equipment WHERE id = ?"),
+  getAvailableEquipment: () =>
+    getDatabase().prepare(
+      "SELECT * FROM equipment WHERE is_available = 1 ORDER BY category, name",
+    ),
+  updateEquipmentStatus: () =>
+    getDatabase().prepare(
+      "UPDATE equipment SET is_available = ?, condition_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    ),
+
   // Group transport schedule queries
-  getTodaysArrivals: () => getDatabase().prepare(`
+  getTodaysArrivals: () =>
+    getDatabase().prepare(`
     SELECT gts.*, v.vehicle_number, v.vehicle_type, s.first_name || ' ' || s.last_name as driver_name
     FROM group_transport_schedules gts
     JOIN vehicles v ON gts.vehicle_id = v.id
@@ -574,7 +691,8 @@ export const queries = {
     AND (LOWER(gts.transport_type) = 'airport_pickup' OR LOWER(gts.pickup_location) LIKE '%airport%')
     ORDER BY gts.pickup_time
   `),
-  getTodaysDepartures: () => getDatabase().prepare(`
+  getTodaysDepartures: () =>
+    getDatabase().prepare(`
     SELECT gts.*, v.vehicle_number, v.vehicle_type, s.first_name || ' ' || s.last_name as driver_name
     FROM group_transport_schedules gts
     JOIN vehicles v ON gts.vehicle_id = v.id
@@ -583,17 +701,22 @@ export const queries = {
     AND (gts.transport_type = 'airport_dropoff' OR LOWER(gts.dropoff_location) LIKE '%airport%')
     ORDER BY gts.pickup_time
   `),
-  
+
   // Notification queries
-  getUnreadNotifications: () => getDatabase().prepare(`
+  getUnreadNotifications: () =>
+    getDatabase().prepare(`
     SELECT * FROM notifications 
     WHERE recipient_staff_id = ? AND is_read = 0 
     ORDER BY is_urgent DESC, created_at DESC
   `),
-  markNotificationRead: () => getDatabase().prepare('UPDATE notifications SET is_read = 1, read_at = CURRENT_TIMESTAMP WHERE id = ?'),
-  
+  markNotificationRead: () =>
+    getDatabase().prepare(
+      "UPDATE notifications SET is_read = 1, read_at = CURRENT_TIMESTAMP WHERE id = ?",
+    ),
+
   // Dashboard statistics
-  getDashboardStats: () => getDatabase().prepare(`
+  getDashboardStats: () =>
+    getDatabase().prepare(`
     SELECT
       (SELECT COUNT(*) FROM tour_groups) as total_groups,
       (SELECT COUNT(*) FROM tour_groups WHERE status = 'active') as active_groups,
@@ -607,7 +730,8 @@ export const queries = {
   `),
 
   // Group queries
-  getAllGroups: () => getDatabase().prepare(`
+  getAllGroups: () =>
+    getDatabase().prepare(`
     SELECT tg.*,
            g.first_name || ' ' || g.last_name as leader_name,
            g.email as leader_email,
@@ -617,7 +741,8 @@ export const queries = {
     ORDER BY tg.created_at DESC
   `),
 
-  getGroupById: () => getDatabase().prepare(`
+  getGroupById: () =>
+    getDatabase().prepare(`
     SELECT tg.*,
            g.first_name || ' ' || g.last_name as leader_name,
            g.email as leader_email
@@ -627,7 +752,8 @@ export const queries = {
   `),
 
   // Groups report by date range (overlap using tour or arrival/departure dates)
-  getGroupsReportInRange: () => getDatabase().prepare(`
+  getGroupsReportInRange: () =>
+    getDatabase().prepare(`
     SELECT
       tg.id,
       tg.group_name,
@@ -660,20 +786,24 @@ export const queries = {
     ORDER BY COALESCE(tg.tour_start_date, tg.arrival_date) ASC, tg.group_name ASC
   `),
 
-  createGroup: () => getDatabase().prepare(`
+  createGroup: () =>
+    getDatabase().prepare(`
     INSERT INTO tour_groups (group_name, group_leader_id, total_members, group_type, tour_start_date, tour_end_date, arrival_date, departure_date, arrival_flight_number, arrival_flight_time, arrival_notes, departure_flight_number, departure_flight_time, departure_notes, traveling_together, total_cost, amount_paid, deposit_amount, special_requirements, group_notes)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `),
 
-  updateGroup: () => getDatabase().prepare(`
+  updateGroup: () =>
+    getDatabase().prepare(`
     UPDATE tour_groups
     SET group_name = ?, group_type = ?, tour_start_date = ?, tour_end_date = ?, arrival_date = ?, departure_date = ?, arrival_flight_number = ?, arrival_flight_time = ?, arrival_notes = ?, departure_flight_number = ?, departure_flight_time = ?, departure_notes = ?, traveling_together = ?, total_cost = ?, amount_paid = ?, deposit_amount = ?, special_requirements = ?, group_notes = ?, status = ?, refund_amount = ?, cancelled_at = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `),
 
-  deleteGroup: () => getDatabase().prepare('DELETE FROM tour_groups WHERE id = ?'),
+  deleteGroup: () =>
+    getDatabase().prepare("DELETE FROM tour_groups WHERE id = ?"),
 
-  getGroupMembers: () => getDatabase().prepare(`
+  getGroupMembers: () =>
+    getDatabase().prepare(`
     SELECT gm.*,
            g.id as id, g.first_name, g.last_name, g.email, g.phone, g.passport_number,
            g.nationality, g.date_of_birth, g.dietary_restrictions,
@@ -687,25 +817,30 @@ export const queries = {
     ORDER BY gm.is_leader DESC, g.last_name, g.first_name
   `),
 
-  addGroupMember: () => getDatabase().prepare(`
+  addGroupMember: () =>
+    getDatabase().prepare(`
     INSERT INTO group_members (group_id, guest_id, is_leader)
     VALUES (?, ?, ?)
   `),
 
-  removeGroupMember: () => getDatabase().prepare(`
+  removeGroupMember: () =>
+    getDatabase().prepare(`
     DELETE FROM group_members WHERE group_id = ? AND guest_id = ?
   `),
 
-  getGroupMemberCount: () => getDatabase().prepare(`
+  getGroupMemberCount: () =>
+    getDatabase().prepare(`
     SELECT COUNT(*) as count FROM group_members WHERE group_id = ?
   `),
 
-  updateGroupMemberCount: () => getDatabase().prepare(`
+  updateGroupMemberCount: () =>
+    getDatabase().prepare(`
     UPDATE tour_groups SET total_members = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
   `),
 
   // Update pickup location
-  updatePickupLocation: () => getDatabase().prepare(`
+  updatePickupLocation: () =>
+    getDatabase().prepare(`
     UPDATE group_transport_schedules
     SET pickup_location = ?
     WHERE transport_type = ?

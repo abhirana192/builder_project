@@ -1,10 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Plane, AlertTriangle, CalendarCheck, Hotel, Users, Printer } from 'lucide-react';
-import { fetchJSON } from '@/lib/fetch-utils';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Plane,
+  AlertTriangle,
+  CalendarCheck,
+  Hotel,
+  Users,
+  Printer,
+} from "lucide-react";
+import { fetchJSON } from "@/lib/fetch-utils";
 
 interface TransportSchedule {
   id: number;
@@ -88,33 +108,72 @@ const DailyActivityReport: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [dbReadOnly, setDbReadOnly] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [startTime, setStartTime] = useState<string>('00:00');
-  const [endTime, setEndTime] = useState<string>('23:59');
+  const [selectedDate, setSelectedDate] = useState<string>(() =>
+    new Date().toISOString().slice(0, 10),
+  );
+  const [startTime, setStartTime] = useState<string>("00:00");
+  const [endTime, setEndTime] = useState<string>("23:59");
 
   // Group bookings report state
-  const [groupStart, setGroupStart] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [groupEnd, setGroupEnd] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [groupStatus, setGroupStatus] = useState<string>('active');
+  const [groupStart, setGroupStart] = useState<string>(() =>
+    new Date().toISOString().slice(0, 10),
+  );
+  const [groupEnd, setGroupEnd] = useState<string>(() =>
+    new Date().toISOString().slice(0, 10),
+  );
+  const [groupStatus, setGroupStatus] = useState<string>("active");
   const [groupReport, setGroupReport] = useState<GroupReportItem[]>([]);
 
   const fetchReportData = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (selectedDate) params.set('date', selectedDate);
+      if (selectedDate) params.set("date", selectedDate);
       if (startTime && endTime) {
-        params.set('startTime', startTime);
-        params.set('endTime', endTime);
+        params.set("startTime", startTime);
+        params.set("endTime", endTime);
       }
 
-      const [arrivalsData, departuresData, activitiesData, checkInsData, checkOutsData, groupReportData] = await Promise.all([
-        fetchJSON(`/api/dashboard/arrivals?${params.toString()}`).catch((e) => { console.warn('Arrivals fetch failed', e); return []; }),
-        fetchJSON(`/api/dashboard/departures?${params.toString()}`).catch((e) => { console.warn('Departures fetch failed', e); return []; }),
-        fetchJSON(`/api/activities/today?${params.toString()}`).catch((e) => { console.warn('Activities fetch failed', e); return []; }),
-        fetchJSON(`/api/hotels/checkins/today?${params.toString()}`).catch((e) => { console.warn('Checkins fetch failed', e); return []; }),
-        fetchJSON(`/api/hotels/checkouts/today?${params.toString()}`).catch((e) => { console.warn('Checkouts fetch failed', e); return []; }),
-        fetchJSON(`/api/reports/group-bookings?start=${groupStart}&end=${groupEnd}&status=${encodeURIComponent(groupStatus)}`).catch((e) => { console.warn('Group report fetch failed', e); return []; }),
+      const [
+        arrivalsData,
+        departuresData,
+        activitiesData,
+        checkInsData,
+        checkOutsData,
+        groupReportData,
+      ] = await Promise.all([
+        fetchJSON(`/api/dashboard/arrivals?${params.toString()}`).catch((e) => {
+          console.warn("Arrivals fetch failed", e);
+          return [];
+        }),
+        fetchJSON(`/api/dashboard/departures?${params.toString()}`).catch(
+          (e) => {
+            console.warn("Departures fetch failed", e);
+            return [];
+          },
+        ),
+        fetchJSON(`/api/activities/today?${params.toString()}`).catch((e) => {
+          console.warn("Activities fetch failed", e);
+          return [];
+        }),
+        fetchJSON(`/api/hotels/checkins/today?${params.toString()}`).catch(
+          (e) => {
+            console.warn("Checkins fetch failed", e);
+            return [];
+          },
+        ),
+        fetchJSON(`/api/hotels/checkouts/today?${params.toString()}`).catch(
+          (e) => {
+            console.warn("Checkouts fetch failed", e);
+            return [];
+          },
+        ),
+        fetchJSON(
+          `/api/reports/group-bookings?start=${groupStart}&end=${groupEnd}&status=${encodeURIComponent(groupStatus)}`,
+        ).catch((e) => {
+          console.warn("Group report fetch failed", e);
+          return [];
+        }),
       ]);
 
       setArrivals(Array.isArray(arrivalsData) ? arrivalsData : []);
@@ -125,7 +184,10 @@ const DailyActivityReport: React.FC = () => {
       setGroupReport(Array.isArray(groupReportData) ? groupReportData : []);
       setError(null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred while fetching report data.';
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "An unknown error occurred while fetching report data.";
       setError(errorMessage);
       setArrivals([]);
       setDepartures([]);
@@ -142,7 +204,7 @@ const DailyActivityReport: React.FC = () => {
     fetchReportData();
     (async () => {
       try {
-        const res = await fetch('/api/db/status');
+        const res = await fetch("/api/db/status");
         if (res.ok) {
           const data = await res.json();
           setDbReadOnly(!!data.readOnly);
@@ -154,15 +216,28 @@ const DailyActivityReport: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const formatPassengerNames = (passengers: TransportSchedule['passengers']) => {
-    if (!Array.isArray(passengers) || passengers.length === 0) return 'N/A';
-    return passengers.map(p => `${p.name} ${p.groupName ? `(${p.groupName})` : ''}`).join(', ');
+  const formatPassengerNames = (
+    passengers: TransportSchedule["passengers"],
+  ) => {
+    if (!Array.isArray(passengers) || passengers.length === 0) return "N/A";
+    return passengers
+      .map((p) => `${p.name} ${p.groupName ? `(${p.groupName})` : ""}`)
+      .join(", ");
   };
 
-
   // Print helpers for specific sections
-  const generateReportHtml = (opts: { includeGroups?: boolean; includeTransport?: boolean; includeActivities?: boolean; includeHotels?: boolean }) => {
-    const { includeGroups = true, includeTransport = true, includeActivities = true, includeHotels = true } = opts;
+  const generateReportHtml = (opts: {
+    includeGroups?: boolean;
+    includeTransport?: boolean;
+    includeActivities?: boolean;
+    includeHotels?: boolean;
+  }) => {
+    const {
+      includeGroups = true,
+      includeTransport = true,
+      includeActivities = true,
+      includeHotels = true,
+    } = opts;
 
     const style = `
       body { font-family: Arial, sans-serif; color: #111827; padding: 20px; }
@@ -179,13 +254,13 @@ const DailyActivityReport: React.FC = () => {
     `;
 
     const transportRows = [
-      ...arrivals.map(a => ({ ...a, type: 'Arrival' })),
-      ...departures.map(d => ({ ...d, type: 'Departure' })),
-    ].sort((a, b) => (a.pickup_time || '').localeCompare(b.pickup_time || ''));
+      ...arrivals.map((a) => ({ ...a, type: "Arrival" })),
+      ...departures.map((d) => ({ ...d, type: "Departure" })),
+    ].sort((a, b) => (a.pickup_time || "").localeCompare(b.pickup_time || ""));
 
     const hotelsRows = [
-      ...hotelCheckIns.map(h => ({ ...h, type: 'Check-in' })),
-      ...hotelCheckOuts.map(h => ({ ...h, type: 'Check-out' })),
+      ...hotelCheckIns.map((h) => ({ ...h, type: "Check-in" })),
+      ...hotelCheckOuts.map((h) => ({ ...h, type: "Check-out" })),
     ];
 
     const sections: string[] = [];
@@ -194,7 +269,7 @@ const DailyActivityReport: React.FC = () => {
       sections.push(`
         <div class="section">
           <h2>Group Bookings (${groupReport.length})</h2>
-          <div class="meta">Range: ${groupStart} → ${groupEnd} | Status: ${groupStatus || 'All'}</div>
+          <div class="meta">Range: ${groupStart} → ${groupEnd} | Status: ${groupStatus || "All"}</div>
           <table>
             <thead>
               <tr>
@@ -211,29 +286,33 @@ const DailyActivityReport: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              ${groupReport.map(g => `
+              ${groupReport
+                .map(
+                  (g) => `
                 <tr>
                   <td>${g.id}</td>
                   <td>${g.group_name}</td>
                   <td>${g.status}</td>
                   <td class="nowrap">${g.total_members}</td>
                   <td>
-                    <div>${g.arrival_date || g.tour_start_date || ''}</div>
-                    <div class="muted">${[g.arrival_flight_number, g.arrival_flight_time].filter(Boolean).join(' ')}</div>
+                    <div>${g.arrival_date || g.tour_start_date || ""}</div>
+                    <div class="muted">${[g.arrival_flight_number, g.arrival_flight_time].filter(Boolean).join(" ")}</div>
                   </td>
                   <td>
-                    <div>${g.departure_date || g.tour_end_date || ''}</div>
-                    <div class="muted">${[g.departure_flight_number, g.departure_flight_time].filter(Boolean).join(' ')}</div>
+                    <div>${g.departure_date || g.tour_end_date || ""}</div>
+                    <div class="muted">${[g.departure_flight_number, g.departure_flight_time].filter(Boolean).join(" ")}</div>
                   </td>
-                  <td>${g.leader_name || ''}</td>
+                  <td>${g.leader_name || ""}</td>
                   <td>
-                    <div>${g.leader_email || ''}</div>
-                    <div>${g.leader_phone || ''}</div>
+                    <div>${g.leader_email || ""}</div>
+                    <div>${g.leader_phone || ""}</div>
                   </td>
-                  <td>${g.member_names || ''}</td>
-                  <td>${g.group_notes || ''}</td>
+                  <td>${g.member_names || ""}</td>
+                  <td>${g.group_notes || ""}</td>
                 </tr>
-              `).join('')}
+              `,
+                )
+                .join("")}
             </tbody>
           </table>
         </div>
@@ -260,32 +339,36 @@ const DailyActivityReport: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              ${transportRows.map(t => {
-                const groupMap = new Map();
-                (t.passengers || []).forEach(p => {
-                  const gid = p.groupId;
-                  if (gid) {
-                    const arr = groupMap.get(gid) || [];
-                    if (!arr.includes(p.name)) arr.push(p.name);
-                    groupMap.set(gid, arr);
-                  }
-                });
-                const groupIdsStr = Array.from(groupMap.keys()).join(', ');
-                const membersByGroupStr = Array.from(groupMap.entries()).map(([gid, names]) => `#${gid}: ${names.join(', ')}`).join(' | ');
-                return `
+              ${transportRows
+                .map((t) => {
+                  const groupMap = new Map();
+                  (t.passengers || []).forEach((p) => {
+                    const gid = p.groupId;
+                    if (gid) {
+                      const arr = groupMap.get(gid) || [];
+                      if (!arr.includes(p.name)) arr.push(p.name);
+                      groupMap.set(gid, arr);
+                    }
+                  });
+                  const groupIdsStr = Array.from(groupMap.keys()).join(", ");
+                  const membersByGroupStr = Array.from(groupMap.entries())
+                    .map(([gid, names]) => `#${gid}: ${names.join(", ")}`)
+                    .join(" | ");
+                  return `
                 <tr>
                   <td>${t.type}</td>
                   <td>${formatPassengerNames(t.passengers)}</td>
-                  <td>${groupIdsStr || '—'}</td>
-                  <td>${membersByGroupStr || '—'}</td>
-                  <td>${t.vehicle_number || 'N/A'}</td>
-                  <td>${t.driver_name || 'N/A'}</td>
-                  <td class="nowrap">${t.pickup_time ? new Date(t.pickup_time).toLocaleString() : ''}</td>
-                  <td>${(t as any).flight_number || ''}</td>
-                  <td>${t.pickup_location || ''}</td>
-                  <td>${t.dropoff_location || ''}</td>
+                  <td>${groupIdsStr || "—"}</td>
+                  <td>${membersByGroupStr || "—"}</td>
+                  <td>${t.vehicle_number || "N/A"}</td>
+                  <td>${t.driver_name || "N/A"}</td>
+                  <td class="nowrap">${t.pickup_time ? new Date(t.pickup_time).toLocaleString() : ""}</td>
+                  <td>${(t as any).flight_number || ""}</td>
+                  <td>${t.pickup_location || ""}</td>
+                  <td>${t.dropoff_location || ""}</td>
                 </tr>`;
-              }).join('')}
+                })
+                .join("")}
             </tbody>
           </table>
         </div>
@@ -296,17 +379,18 @@ const DailyActivityReport: React.FC = () => {
       sections.push(`
         <div class="section">
           <h2>Activities Today: ${activities.length}</h2>
-          ${activities.map(a => {
-            const pRows = (a.participants || []).map(p => ({
-              name: p.name,
-              group: p.groupName || '',
-              groupId: p.groupId || '',
-              location: p.location || null,
-            }));
-            return `
+          ${activities
+            .map((a) => {
+              const pRows = (a.participants || []).map((p) => ({
+                name: p.name,
+                group: p.groupName || "",
+                groupId: p.groupId || "",
+                location: p.location || null,
+              }));
+              return `
             <div style="margin: 12px 0;">
-              <div class="muted">Guide: ${a.guide_name || 'N/A'} | Date: ${a.scheduled_date} | Start: ${a.scheduled_time} | End: ${a.computed_end_time || ''} | Status: ${a.status || 'scheduled'}</div>
-              <div style="font-weight:600; margin: 4px 0 8px;">${a.activity_name || 'N/A'}</div>
+              <div class="muted">Guide: ${a.guide_name || "N/A"} | Date: ${a.scheduled_date} | Start: ${a.scheduled_time} | End: ${a.computed_end_time || ""} | Status: ${a.status || "scheduled"}</div>
+              <div style="font-weight:600; margin: 4px 0 8px;">${a.activity_name || "N/A"}</div>
               <table>
                 <thead>
                   <tr>
@@ -317,20 +401,29 @@ const DailyActivityReport: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  ${pRows.length > 0 ? pRows.map(r => `
+                  ${
+                    pRows.length > 0
+                      ? pRows
+                          .map(
+                            (r) => `
                     <tr>
                       <td>${r.name}</td>
                       <td>${r.group}</td>
-                      <td>${r.groupId || '—'}</td>
-                      <td>${r.location || 'NULL'}</td>
+                      <td>${r.groupId || "—"}</td>
+                      <td>${r.location || "NULL"}</td>
                     </tr>
-                  `).join('') : `
+                  `,
+                          )
+                          .join("")
+                      : `
                     <tr><td colspan="4" class="muted">No participants for this activity.</td></tr>
-                  `}
+                  `
+                  }
                 </tbody>
               </table>
             </div>`;
-          }).join('')}
+            })
+            .join("")}
         </div>
       `);
     }
@@ -352,17 +445,21 @@ const DailyActivityReport: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              ${hotelsRows.map(h => `
+              ${hotelsRows
+                .map(
+                  (h) => `
                 <tr>
                   <td>${h.type}</td>
                   <td>${h.guest_name}</td>
-                  <td>${h.group_name || ''}</td>
+                  <td>${h.group_name || ""}</td>
                   <td>${h.hotel_name || h.hotel_id}</td>
-                  <td>${h.room_number || ''}</td>
+                  <td>${h.room_number || ""}</td>
                   <td>${h.check_in_date}</td>
                   <td>${h.check_out_date}</td>
                 </tr>
-              `).join('')}
+              `,
+                )
+                .join("")}
             </tbody>
           </table>
         </div>
@@ -399,7 +496,7 @@ const DailyActivityReport: React.FC = () => {
             Generated on ${new Date().toLocaleString()} | Date: ${selectedDate} | Time: ${startTime} - ${endTime}
           </div>
           <div id="editable-root" contenteditable="true">
-            ${sections.join('')}
+            ${sections.join("")}
           </div>
           <script>
             function toggleEdit(){
@@ -419,7 +516,7 @@ const DailyActivityReport: React.FC = () => {
   };
 
   const openPrintWindow = (html: string) => {
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open("", "_blank");
     if (!printWindow) return;
     printWindow.document.open();
     printWindow.document.write(html);
@@ -428,30 +525,54 @@ const DailyActivityReport: React.FC = () => {
   };
 
   const handlePrintReport = () => {
-    const html = generateReportHtml({ includeGroups: true, includeTransport: true, includeActivities: true, includeHotels: true });
+    const html = generateReportHtml({
+      includeGroups: true,
+      includeTransport: true,
+      includeActivities: true,
+      includeHotels: true,
+    });
     openPrintWindow(html);
   };
 
   const handlePrintGroups = () => {
-    const html = generateReportHtml({ includeGroups: true, includeTransport: false, includeActivities: false, includeHotels: false });
+    const html = generateReportHtml({
+      includeGroups: true,
+      includeTransport: false,
+      includeActivities: false,
+      includeHotels: false,
+    });
     openPrintWindow(html);
   };
 
   const handlePrintTransportOnly = () => {
-    const html = generateReportHtml({ includeGroups: false, includeTransport: true, includeActivities: false, includeHotels: false });
+    const html = generateReportHtml({
+      includeGroups: false,
+      includeTransport: true,
+      includeActivities: false,
+      includeHotels: false,
+    });
     openPrintWindow(html);
   };
 
   const handlePrintActivitiesOnly = () => {
-    const html = generateReportHtml({ includeGroups: false, includeTransport: false, includeActivities: true, includeHotels: false });
+    const html = generateReportHtml({
+      includeGroups: false,
+      includeTransport: false,
+      includeActivities: true,
+      includeHotels: false,
+    });
     openPrintWindow(html);
   };
 
   const handlePrintHotelsOnly = () => {
-    const html = generateReportHtml({ includeGroups: false, includeTransport: false, includeActivities: false, includeHotels: true });
+    const html = generateReportHtml({
+      includeGroups: false,
+      includeTransport: false,
+      includeActivities: false,
+      includeHotels: true,
+    });
     openPrintWindow(html);
   };
-
 
   if (loading) {
     return (
@@ -470,7 +591,9 @@ const DailyActivityReport: React.FC = () => {
         <Alert variant="destructive" className="max-w-lg">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error} Please try refreshing the page.</AlertDescription>
+          <AlertDescription>
+            {error} Please try refreshing the page.
+          </AlertDescription>
         </Alert>
       </div>
     );
@@ -482,7 +605,10 @@ const DailyActivityReport: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold mb-2">Daily Activity Report</h1>
           {dbReadOnly ? (
-            <div className="mb-2 text-sm text-yellow-700 bg-yellow-100 px-3 py-2 rounded">Database is in read-only mode — mutating actions are disabled. Prints and local edits are still available.</div>
+            <div className="mb-2 text-sm text-yellow-700 bg-yellow-100 px-3 py-2 rounded">
+              Database is in read-only mode — mutating actions are disabled.
+              Prints and local edits are still available.
+            </div>
           ) : null}
           <div className="flex flex-wrap gap-3 items-center">
             <div className="flex flex-col">
@@ -495,7 +621,9 @@ const DailyActivityReport: React.FC = () => {
               />
             </div>
             <div className="flex flex-col">
-              <label className="text-xs text-muted-foreground mb-1">Start time</label>
+              <label className="text-xs text-muted-foreground mb-1">
+                Start time
+              </label>
               <input
                 type="time"
                 value={startTime}
@@ -504,7 +632,9 @@ const DailyActivityReport: React.FC = () => {
               />
             </div>
             <div className="flex flex-col">
-              <label className="text-xs text-muted-foreground mb-1">End time</label>
+              <label className="text-xs text-muted-foreground mb-1">
+                End time
+              </label>
               <input
                 type="time"
                 value={endTime}
@@ -512,27 +642,58 @@ const DailyActivityReport: React.FC = () => {
                 className="border rounded-md px-3 py-2 text-sm bg-background"
               />
             </div>
-            <Button onClick={fetchReportData} variant="secondary">Apply</Button>
+            <Button onClick={fetchReportData} variant="secondary">
+              Apply
+            </Button>
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button onClick={handlePrintReport} variant="outline" disabled={loading || (arrivals.length + departures.length + activities.length + hotelCheckIns.length + hotelCheckOuts.length + groupReport.length === 0)}>
+          <Button
+            onClick={handlePrintReport}
+            variant="outline"
+            disabled={
+              loading ||
+              arrivals.length +
+                departures.length +
+                activities.length +
+                hotelCheckIns.length +
+                hotelCheckOuts.length +
+                groupReport.length ===
+                0
+            }
+          >
             <Printer className="mr-2 h-4 w-4" />
             Print All
           </Button>
-          <Button onClick={handlePrintGroups} variant="outline" disabled={groupReport.length === 0}>
+          <Button
+            onClick={handlePrintGroups}
+            variant="outline"
+            disabled={groupReport.length === 0}
+          >
             <Printer className="mr-2 h-4 w-4" />
             Print Groups
           </Button>
-          <Button onClick={handlePrintTransportOnly} variant="outline" disabled={(arrivals.length + departures.length) === 0}>
+          <Button
+            onClick={handlePrintTransportOnly}
+            variant="outline"
+            disabled={arrivals.length + departures.length === 0}
+          >
             <Printer className="mr-2 h-4 w-4" />
             Print Transport
           </Button>
-          <Button onClick={handlePrintActivitiesOnly} variant="outline" disabled={activities.length === 0}>
+          <Button
+            onClick={handlePrintActivitiesOnly}
+            variant="outline"
+            disabled={activities.length === 0}
+          >
             <Printer className="mr-2 h-4 w-4" />
             Print Activities
           </Button>
-          <Button onClick={handlePrintHotelsOnly} variant="outline" disabled={(hotelCheckIns.length + hotelCheckOuts.length) === 0}>
+          <Button
+            onClick={handlePrintHotelsOnly}
+            variant="outline"
+            disabled={hotelCheckIns.length + hotelCheckOuts.length === 0}
+          >
             <Printer className="mr-2 h-4 w-4" />
             Print Hotels
           </Button>
@@ -545,26 +706,51 @@ const DailyActivityReport: React.FC = () => {
             <Users className="h-5 w-5 text-purple-600" />
             Group Bookings ({groupReport.length})
           </CardTitle>
-          <CardDescription>Groups active within the selected date range, with pax, travel, contact, and notes.</CardDescription>
+          <CardDescription>
+            Groups active within the selected date range, with pax, travel,
+            contact, and notes.
+          </CardDescription>
           <div className="mt-4 flex flex-wrap gap-3 items-end">
             <div className="flex flex-col">
-              <label className="text-xs text-muted-foreground mb-1">Start date</label>
-              <input type="date" value={groupStart} onChange={(e) => setGroupStart(e.target.value)} className="border rounded-md px-3 py-2 text-sm bg-background" />
+              <label className="text-xs text-muted-foreground mb-1">
+                Start date
+              </label>
+              <input
+                type="date"
+                value={groupStart}
+                onChange={(e) => setGroupStart(e.target.value)}
+                className="border rounded-md px-3 py-2 text-sm bg-background"
+              />
             </div>
             <div className="flex flex-col">
-              <label className="text-xs text-muted-foreground mb-1">End date</label>
-              <input type="date" value={groupEnd} onChange={(e) => setGroupEnd(e.target.value)} className="border rounded-md px-3 py-2 text-sm bg-background" />
+              <label className="text-xs text-muted-foreground mb-1">
+                End date
+              </label>
+              <input
+                type="date"
+                value={groupEnd}
+                onChange={(e) => setGroupEnd(e.target.value)}
+                className="border rounded-md px-3 py-2 text-sm bg-background"
+              />
             </div>
             <div className="flex flex-col">
-              <label className="text-xs text-muted-foreground mb-1">Status</label>
-              <select value={groupStatus} onChange={(e) => setGroupStatus(e.target.value)} className="border rounded-md px-3 py-2 text-sm bg-background">
+              <label className="text-xs text-muted-foreground mb-1">
+                Status
+              </label>
+              <select
+                value={groupStatus}
+                onChange={(e) => setGroupStatus(e.target.value)}
+                className="border rounded-md px-3 py-2 text-sm bg-background"
+              >
                 <option value="">All</option>
                 <option value="active">Active</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
-            <Button variant="secondary" onClick={fetchReportData}>Load</Button>
+            <Button variant="secondary" onClick={fetchReportData}>
+              Load
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -585,39 +771,63 @@ const DailyActivityReport: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {groupReport.map(g => (
+                {groupReport.map((g) => (
                   <TableRow key={g.id}>
-                    <TableCell className="text-xs text-muted-foreground">{g.id}</TableCell>
-                    <TableCell className="font-medium">{g.group_name}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {g.id}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {g.group_name}
+                    </TableCell>
                     <TableCell>{g.status}</TableCell>
                     <TableCell>{g.total_members}</TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <div>{g.arrival_date || g.tour_start_date || ''}</div>
-                        <div className="text-muted-foreground">{[g.arrival_flight_number, g.arrival_flight_time].filter(Boolean).join(' ')}</div>
+                        <div>{g.arrival_date || g.tour_start_date || ""}</div>
+                        <div className="text-muted-foreground">
+                          {[g.arrival_flight_number, g.arrival_flight_time]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <div>{g.departure_date || g.tour_end_date || ''}</div>
-                        <div className="text-muted-foreground">{[g.departure_flight_number, g.departure_flight_time].filter(Boolean).join(' ')}</div>
+                        <div>{g.departure_date || g.tour_end_date || ""}</div>
+                        <div className="text-muted-foreground">
+                          {[g.departure_flight_number, g.departure_flight_time]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>{g.leader_name || ''}</TableCell>
+                    <TableCell>{g.leader_name || ""}</TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <div>{g.leader_email || ''}</div>
-                        <div>{g.leader_phone || ''}</div>
+                        <div>{g.leader_email || ""}</div>
+                        <div>{g.leader_phone || ""}</div>
                       </div>
                     </TableCell>
-                    <TableCell className="max-w-[320px] truncate" title={g.member_names || ''}>{g.member_names || ''}</TableCell>
-                    <TableCell className="max-w-[240px] truncate" title={g.group_notes || ''}>{g.group_notes || ''}</TableCell>
+                    <TableCell
+                      className="max-w-[320px] truncate"
+                      title={g.member_names || ""}
+                    >
+                      {g.member_names || ""}
+                    </TableCell>
+                    <TableCell
+                      className="max-w-[240px] truncate"
+                      title={g.group_notes || ""}
+                    >
+                      {g.group_notes || ""}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           ) : (
-            <p className="text-sm text-muted-foreground">No groups found for the selected range.</p>
+            <p className="text-sm text-muted-foreground">
+              No groups found for the selected range.
+            </p>
           )}
         </CardContent>
       </Card>
@@ -626,12 +836,15 @@ const DailyActivityReport: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plane className="h-5 w-5 text-blue-600" />
-            Transport (Arrivals + Departures): {arrivals.length + departures.length}
+            Transport (Arrivals + Departures):{" "}
+            {arrivals.length + departures.length}
           </CardTitle>
-          <CardDescription>All transport schedules for guests arriving and departing today.</CardDescription>
+          <CardDescription>
+            All transport schedules for guests arriving and departing today.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {(arrivals.length > 0 || departures.length > 0) ? (
+          {arrivals.length > 0 || departures.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -650,26 +863,41 @@ const DailyActivityReport: React.FC = () => {
               <TableBody>
                 {arrivals.map((item) => {
                   const groupMap = new Map<number, string[]>();
-                  (item.passengers || []).forEach(p => {
+                  (item.passengers || []).forEach((p) => {
                     const gid = (p as any).groupId as number | null | undefined;
-                    if (gid && typeof gid === 'number') {
+                    if (gid && typeof gid === "number") {
                       const arr = groupMap.get(gid) || [];
                       if (!arr.includes(p.name)) arr.push(p.name);
                       groupMap.set(gid, arr);
                     }
                   });
-                  const groupIdsStr = Array.from(groupMap.keys()).join(', ');
-                  const membersByGroupStr = Array.from(groupMap.entries()).map(([gid, names]) => `#${gid}: ${names.join(', ')}`).join(' | ');
+                  const groupIdsStr = Array.from(groupMap.keys()).join(", ");
+                  const membersByGroupStr = Array.from(groupMap.entries())
+                    .map(([gid, names]) => `#${gid}: ${names.join(", ")}`)
+                    .join(" | ");
                   return (
                     <TableRow key={`arr-${item.id}`}>
-                      <TableCell><span className="font-semibold text-green-600">Arrival</span></TableCell>
-                      <TableCell className="font-medium">{formatPassengerNames(item.passengers)}</TableCell>
-                      <TableCell>{groupIdsStr || '—'}</TableCell>
-                      <TableCell className="max-w-[360px] truncate" title={membersByGroupStr}>{membersByGroupStr || '—'}</TableCell>
-                      <TableCell>{item.vehicle_number || 'N/A'}</TableCell>
-                      <TableCell>{item.driver_name || 'N/A'}</TableCell>
-                      <TableCell>{new Date(item.pickup_time).toLocaleString()}</TableCell>
-                      <TableCell>{(item as any).flight_number || ''}</TableCell>
+                      <TableCell>
+                        <span className="font-semibold text-green-600">
+                          Arrival
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {formatPassengerNames(item.passengers)}
+                      </TableCell>
+                      <TableCell>{groupIdsStr || "—"}</TableCell>
+                      <TableCell
+                        className="max-w-[360px] truncate"
+                        title={membersByGroupStr}
+                      >
+                        {membersByGroupStr || "—"}
+                      </TableCell>
+                      <TableCell>{item.vehicle_number || "N/A"}</TableCell>
+                      <TableCell>{item.driver_name || "N/A"}</TableCell>
+                      <TableCell>
+                        {new Date(item.pickup_time).toLocaleString()}
+                      </TableCell>
+                      <TableCell>{(item as any).flight_number || ""}</TableCell>
                       <TableCell>{item.pickup_location}</TableCell>
                       <TableCell>{item.dropoff_location}</TableCell>
                     </TableRow>
@@ -677,26 +905,41 @@ const DailyActivityReport: React.FC = () => {
                 })}
                 {departures.map((item) => {
                   const groupMap = new Map<number, string[]>();
-                  (item.passengers || []).forEach(p => {
+                  (item.passengers || []).forEach((p) => {
                     const gid = (p as any).groupId as number | null | undefined;
-                    if (gid && typeof gid === 'number') {
+                    if (gid && typeof gid === "number") {
                       const arr = groupMap.get(gid) || [];
                       if (!arr.includes(p.name)) arr.push(p.name);
                       groupMap.set(gid, arr);
                     }
                   });
-                  const groupIdsStr = Array.from(groupMap.keys()).join(', ');
-                  const membersByGroupStr = Array.from(groupMap.entries()).map(([gid, names]) => `#${gid}: ${names.join(', ')}`).join(' | ');
+                  const groupIdsStr = Array.from(groupMap.keys()).join(", ");
+                  const membersByGroupStr = Array.from(groupMap.entries())
+                    .map(([gid, names]) => `#${gid}: ${names.join(", ")}`)
+                    .join(" | ");
                   return (
                     <TableRow key={`dep-${item.id}`}>
-                      <TableCell><span className="font-semibold text-red-600">Departure</span></TableCell>
-                      <TableCell className="font-medium">{formatPassengerNames(item.passengers)}</TableCell>
-                      <TableCell>{groupIdsStr || '—'}</TableCell>
-                      <TableCell className="max-w-[360px] truncate" title={membersByGroupStr}>{membersByGroupStr || '—'}</TableCell>
-                      <TableCell>{item.vehicle_number || 'N/A'}</TableCell>
-                      <TableCell>{item.driver_name || 'N/A'}</TableCell>
-                      <TableCell>{new Date(item.pickup_time).toLocaleString()}</TableCell>
-                      <TableCell>{(item as any).flight_number || ''}</TableCell>
+                      <TableCell>
+                        <span className="font-semibold text-red-600">
+                          Departure
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {formatPassengerNames(item.passengers)}
+                      </TableCell>
+                      <TableCell>{groupIdsStr || "—"}</TableCell>
+                      <TableCell
+                        className="max-w-[360px] truncate"
+                        title={membersByGroupStr}
+                      >
+                        {membersByGroupStr || "—"}
+                      </TableCell>
+                      <TableCell>{item.vehicle_number || "N/A"}</TableCell>
+                      <TableCell>{item.driver_name || "N/A"}</TableCell>
+                      <TableCell>
+                        {new Date(item.pickup_time).toLocaleString()}
+                      </TableCell>
+                      <TableCell>{(item as any).flight_number || ""}</TableCell>
                       <TableCell>{item.pickup_location}</TableCell>
                       <TableCell>{item.dropoff_location}</TableCell>
                     </TableRow>
@@ -705,7 +948,9 @@ const DailyActivityReport: React.FC = () => {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-sm text-muted-foreground">No transport scheduled for today.</p>
+            <p className="text-sm text-muted-foreground">
+              No transport scheduled for today.
+            </p>
           )}
         </CardContent>
       </Card>
@@ -716,32 +961,66 @@ const DailyActivityReport: React.FC = () => {
             <CalendarCheck className="h-5 w-5 text-emerald-600" />
             Activities Today: {activities.length}
           </CardTitle>
-          <CardDescription>Each activity includes a participant list with group info.</CardDescription>
+          <CardDescription>
+            Each activity includes a participant list with group info.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {activities.length > 0 ? (
             activities.map((a) => {
               const startTime = a.scheduled_time;
-              const endTime = a.computed_end_time || '';
-              const participantRows = (a.participants || []).map(p => ({
+              const endTime = a.computed_end_time || "";
+              const participantRows = (a.participants || []).map((p) => ({
                 name: p.name,
-                group: p.groupName || '',
-                groupId: p.groupId ?? '',
+                group: p.groupName || "",
+                groupId: p.groupId ?? "",
                 location: p.location || null,
               }));
               return (
                 <div key={`act-${a.id}`} className="border rounded-md">
                   <div className="px-4 pt-4">
                     <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                      <div><span className="font-medium text-foreground">Activity:</span> {a.activity_name || 'N/A'}</div>
-                      <div><span className="font-medium text-foreground">Guide:</span> {a.guide_name || 'N/A'}</div>
-                      <div><span className="font-medium text-foreground">Date:</span> {a.scheduled_date}</div>
-                      <div><span className="font-medium text-foreground">Start:</span> {startTime}</div>
-                      <div><span className="font-medium text-foreground">End:</span> {endTime || '—'}</div>
-                      <div><span className="font-medium text-foreground">Status:</span> {a.status || 'scheduled'}</div>
+                      <div>
+                        <span className="font-medium text-foreground">
+                          Activity:
+                        </span>{" "}
+                        {a.activity_name || "N/A"}
+                      </div>
+                      <div>
+                        <span className="font-medium text-foreground">
+                          Guide:
+                        </span>{" "}
+                        {a.guide_name || "N/A"}
+                      </div>
+                      <div>
+                        <span className="font-medium text-foreground">
+                          Date:
+                        </span>{" "}
+                        {a.scheduled_date}
+                      </div>
+                      <div>
+                        <span className="font-medium text-foreground">
+                          Start:
+                        </span>{" "}
+                        {startTime}
+                      </div>
+                      <div>
+                        <span className="font-medium text-foreground">
+                          End:
+                        </span>{" "}
+                        {endTime || "—"}
+                      </div>
+                      <div>
+                        <span className="font-medium text-foreground">
+                          Status:
+                        </span>{" "}
+                        {a.status || "scheduled"}
+                      </div>
                     </div>
                     {a.notes ? (
-                      <div className="mt-2 text-sm"><span className="font-medium">Notes:</span> {a.notes}</div>
+                      <div className="mt-2 text-sm">
+                        <span className="font-medium">Notes:</span> {a.notes}
+                      </div>
                     ) : null}
                   </div>
                   <div className="p-0">
@@ -758,15 +1037,22 @@ const DailyActivityReport: React.FC = () => {
                         {participantRows.length > 0 ? (
                           participantRows.map((row, idx) => (
                             <TableRow key={`act-${a.id}-p-${idx}`}>
-                              <TableCell className="font-medium">{row.name}</TableCell>
+                              <TableCell className="font-medium">
+                                {row.name}
+                              </TableCell>
                               <TableCell>{row.group}</TableCell>
-                              <TableCell>{row.groupId || '—'}</TableCell>
-                              <TableCell>{row.location || 'NULL'}</TableCell>
+                              <TableCell>{row.groupId || "—"}</TableCell>
+                              <TableCell>{row.location || "NULL"}</TableCell>
                             </TableRow>
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={4} className="text-sm text-muted-foreground">No participants for this activity.</TableCell>
+                            <TableCell
+                              colSpan={4}
+                              className="text-sm text-muted-foreground"
+                            >
+                              No participants for this activity.
+                            </TableCell>
                           </TableRow>
                         )}
                       </TableBody>
@@ -776,7 +1062,9 @@ const DailyActivityReport: React.FC = () => {
               );
             })
           ) : (
-            <p className="text-sm text-muted-foreground">No activities scheduled for today.</p>
+            <p className="text-sm text-muted-foreground">
+              No activities scheduled for today.
+            </p>
           )}
         </CardContent>
       </Card>
@@ -785,12 +1073,13 @@ const DailyActivityReport: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Hotel className="h-5 w-5 text-indigo-600" />
-            Hotels (Check-ins: {hotelCheckIns.length}, Check-outs: {hotelCheckOuts.length})
+            Hotels (Check-ins: {hotelCheckIns.length}, Check-outs:{" "}
+            {hotelCheckOuts.length})
           </CardTitle>
           <CardDescription>Guests checking in and out today.</CardDescription>
         </CardHeader>
         <CardContent>
-          {(hotelCheckIns.length + hotelCheckOuts.length) > 0 ? (
+          {hotelCheckIns.length + hotelCheckOuts.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -804,24 +1093,36 @@ const DailyActivityReport: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {hotelCheckIns.map(h => (
+                {hotelCheckIns.map((h) => (
                   <TableRow key={`hin-${h.id}`}>
-                    <TableCell><span className="font-semibold text-green-600">Check-in</span></TableCell>
-                    <TableCell className="font-medium">{h.guest_name}</TableCell>
-                    <TableCell>{h.group_name || ''}</TableCell>
+                    <TableCell>
+                      <span className="font-semibold text-green-600">
+                        Check-in
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {h.guest_name}
+                    </TableCell>
+                    <TableCell>{h.group_name || ""}</TableCell>
                     <TableCell>{h.hotel_name || h.hotel_id}</TableCell>
-                    <TableCell>{h.room_number || ''}</TableCell>
+                    <TableCell>{h.room_number || ""}</TableCell>
                     <TableCell>{h.check_in_date}</TableCell>
                     <TableCell>{h.check_out_date}</TableCell>
                   </TableRow>
                 ))}
-                {hotelCheckOuts.map(h => (
+                {hotelCheckOuts.map((h) => (
                   <TableRow key={`hout-${h.id}`}>
-                    <TableCell><span className="font-semibold text-red-600">Check-out</span></TableCell>
-                    <TableCell className="font-medium">{h.guest_name}</TableCell>
-                    <TableCell>{h.group_name || ''}</TableCell>
+                    <TableCell>
+                      <span className="font-semibold text-red-600">
+                        Check-out
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {h.guest_name}
+                    </TableCell>
+                    <TableCell>{h.group_name || ""}</TableCell>
                     <TableCell>{h.hotel_name || h.hotel_id}</TableCell>
-                    <TableCell>{h.room_number || ''}</TableCell>
+                    <TableCell>{h.room_number || ""}</TableCell>
                     <TableCell>{h.check_in_date}</TableCell>
                     <TableCell>{h.check_out_date}</TableCell>
                   </TableRow>
@@ -829,7 +1130,9 @@ const DailyActivityReport: React.FC = () => {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-sm text-muted-foreground">No hotel check-ins or check-outs today.</p>
+            <p className="text-sm text-muted-foreground">
+              No hotel check-ins or check-outs today.
+            </p>
           )}
         </CardContent>
       </Card>
