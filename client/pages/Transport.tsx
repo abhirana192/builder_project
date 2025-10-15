@@ -165,11 +165,7 @@ export default function Transport() {
 
   useEffect(() => {
     fetchData();
-
-    // Auto-refresh every 30 seconds to catch new auto-scheduled transports
-    const interval = setInterval(fetchData, 30000);
-
-    return () => clearInterval(interval);
+    // Auto-refresh disabled by request; use manual Refresh button instead
   }, []);
 
   const fetchData = async () => {
@@ -2661,7 +2657,10 @@ export default function Transport() {
 
           {/* Airport Pickup Schedules (combined per group) */}
           <div className="grid gap-4">
-            {buildCombinedAirportTransfers().filter(t => t.pickup).map((t) => {
+            {buildCombinedAirportTransfers()
+              .filter(t => t.pickup)
+              .sort((a, b) => new Date(b.pickup!.pickup_time).getTime() - new Date(a.pickup!.pickup_time).getTime())
+              .map((t) => {
               const refSchedule = t.pickup!;
               const VehicleIcon = getVehicleIcon(refSchedule.vehicle_type);
               const StatusIcon = getStatusIcon(refSchedule.status);
@@ -2752,7 +2751,10 @@ export default function Transport() {
 
           {/* Airport Dropoff Schedules (combined per group) */}
           <div className="grid gap-4">
-            {buildCombinedAirportTransfers().filter(t => t.dropoff).map((t) => {
+            {buildCombinedAirportTransfers()
+              .filter(t => t.dropoff)
+              .sort((a, b) => new Date(b.dropoff!.pickup_time).getTime() - new Date(a.dropoff!.pickup_time).getTime())
+              .map((t) => {
               const refSchedule = t.dropoff!;
               const VehicleIcon = getVehicleIcon(refSchedule.vehicle_type);
 
