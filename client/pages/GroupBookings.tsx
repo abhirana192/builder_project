@@ -99,6 +99,8 @@ export default function GroupBookings() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [groupIdFilter, setGroupIdFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<(TourGroup & { bookings?: GroupBookingSummary[] }) | null>(null);
   const [isCreating, setIsCreating] = useState(false);
