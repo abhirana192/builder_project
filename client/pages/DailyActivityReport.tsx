@@ -281,8 +281,6 @@ const DailyActivityReport: React.FC = () => {
                 <th>Pax</th>
                 <th>Arrival</th>
                 <th>Departure</th>
-                <th>Hotel</th>
-                <th>Room</th>
                 <th>Leader</th>
                 <th>Contact</th>
                 <th>Members</th>
