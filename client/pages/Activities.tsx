@@ -967,6 +967,17 @@ export default function Activities() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
+          <PrintActivityDetails
+            activities={(() => {
+              const lookup = new Map(activities.map(a => [a.id, a.location]));
+              return (sortedInstances || []).map(i => ({ ...i, location: lookup.get(i.activity_id) || "" }));
+            })()}
+          >
+            <Button variant="outline">
+              <Printer className="mr-2 h-4 w-4" />
+              Print Schedule
+            </Button>
+          </PrintActivityDetails>
           <Dialog
             open={isScheduleActivityOpen}
             onOpenChange={setIsScheduleActivityOpen}
