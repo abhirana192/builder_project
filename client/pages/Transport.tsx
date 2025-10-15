@@ -138,6 +138,7 @@ export default function Transport() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedDate, setSelectedDate] = useState("");
   const [activeTab, setActiveTab] = useState("schedules");
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
   const [scheduleType, setScheduleType] = useState<
@@ -3518,6 +3519,12 @@ export default function Transport() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-[170px]"
+                  />
                   <Filter className="h-4 w-4 text-muted-foreground" />
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-[150px]">
@@ -3579,7 +3586,33 @@ export default function Transport() {
           {/* Airport Pickup Schedules (combined per group) */}
           <div className="grid gap-4">
             {buildCombinedAirportTransfers()
-              .filter((t) => t.pickup)
+              .filter((t) => {
+                if (!t.pickup) return false;
+                const s = t.pickup;
+                // Status filter
+                if (statusFilter !== "all" && s.status !== statusFilter) return false;
+                // Date filter
+                if (selectedDate) {
+                  try {
+                    const d = new Date(s.pickup_time);
+                    const dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+                    if (dStr !== selectedDate) return false;
+                  } catch {}
+                }
+                // Name search (group or passenger)
+                if (passengerSearchTerm) {
+                  const q = passengerSearchTerm.toLowerCase();
+                  const groupMatch = (t.groupName || "").toLowerCase().includes(q);
+                  let paxMatch = false;
+                  const groupsArr: any[] = Array.isArray(s.groups) ? (s.groups as any[]) : [];
+                  for (const g of groupsArr) {
+                    const name = (g && (g.name || g.group_name || (g.first_name && g.last_name ? `${g.first_name} ${g.last_name}` : ""))) || "";
+                    if (String(name).toLowerCase().includes(q)) { paxMatch = true; break; }
+                  }
+                  if (!groupMatch && !paxMatch) return false;
+                }
+                return true;
+              })
               .sort(
                 (a, b) =>
                   new Date(b.pickup!.pickup_time).getTime() -
@@ -3687,6 +3720,45 @@ export default function Transport() {
         </TabsContent>
 
         <TabsContent value="airport" className="space-y-4">
+          {/* Search and Filter */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex gap-4 items-center">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search schedules..."
+                      value={passengerSearchTerm}
+                      onChange={(e) => setPassengerSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-[170px]"
+                  />
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="in_transit">In Transit</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           {/* Airport Dropoff Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
@@ -3730,7 +3802,33 @@ export default function Transport() {
           {/* Airport Dropoff Schedules (combined per group) */}
           <div className="grid gap-4">
             {buildCombinedAirportTransfers()
-              .filter((t) => t.dropoff)
+              .filter((t) => {
+                if (!t.dropoff) return false;
+                const s = t.dropoff;
+                // Status filter
+                if (statusFilter !== "all" && s.status !== statusFilter) return false;
+                // Date filter
+                if (selectedDate) {
+                  try {
+                    const d = new Date(s.pickup_time);
+                    const dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+                    if (dStr !== selectedDate) return false;
+                  } catch {}
+                }
+                // Name search (group or passenger)
+                if (passengerSearchTerm) {
+                  const q = passengerSearchTerm.toLowerCase();
+                  const groupMatch = (t.groupName || "").toLowerCase().includes(q);
+                  let paxMatch = false;
+                  const groupsArr: any[] = Array.isArray(s.groups) ? (s.groups as any[]) : [];
+                  for (const g of groupsArr) {
+                    const name = (g && (g.name || g.group_name || (g.first_name && g.last_name ? `${g.first_name} ${g.last_name}` : ""))) || "";
+                    if (String(name).toLowerCase().includes(q)) { paxMatch = true; break; }
+                  }
+                  if (!groupMatch && !paxMatch) return false;
+                }
+                return true;
+              })
               .sort(
                 (a, b) =>
                   new Date(b.dropoff!.pickup_time).getTime() -
