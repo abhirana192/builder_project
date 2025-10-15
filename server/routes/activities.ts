@@ -113,6 +113,19 @@ export const getTodaysActivityInstances: RequestHandler = (req, res) => {
     const guestHotelMap = new Map<number, string>();
     for (const r of hotelRows) guestHotelMap.set(r.id, r.hotel_name);
 
+    // Build map of group_id -> hotel name by looking at any member's hotel booking on that date
+    const groupHotelRows = db.prepare(`
+      SELECT gm.group_id as group_id, h.name as hotel_name
+      FROM group_members gm
+      JOIN hotel_bookings hb ON hb.guest_id = gm.guest_id
+      JOIN hotels h ON h.id = hb.hotel_id
+      WHERE DATE(?) BETWEEN DATE(hb.check_in_date) AND DATE(hb.check_out_date)
+        AND hb.status IN ('confirmed','checked_in')
+        AND gm.group_id IS NOT NULL
+    `).all(filterDate) as Array<{ group_id: number; hotel_name: string }>;
+    const groupHotelMap = new Map<number, string>();
+    for (const r of groupHotelRows) if (!groupHotelMap.has(r.group_id)) groupHotelMap.set(r.group_id, r.hotel_name);
+
     const enrichWithParticipants = (activityName: string) => {
       const schedules = queries.getDatabase().prepare(`
         SELECT * FROM group_transport_schedules
@@ -175,13 +188,13 @@ export const getTodaysActivityInstances: RequestHandler = (req, res) => {
           name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
           groupName: p.group_name || undefined,
           groupId: p.group_id ?? null,
-          location: guestHotelMap.get(p.id) || null,
+          location: guestHotelMap.get(p.id) || (p.group_id != null ? groupHotelMap.get(p.group_id) || null : null),
         }));
       } catch {}
 
       // 2) Secondary: transport-linked participants (if none persisted)
       if (!participants || participants.length === 0) {
-        participants = inst.activity_name ? enrichWithParticipants(inst.activity_name).map(p => ({ id: p.id, name: p.name, groupName: p.groupName, groupId: p.groupId, location: guestHotelMap.get(p.id) || null })) : [];
+        participants = inst.activity_name ? enrichWithParticipants(inst.activity_name).map(p => ({ id: p.id, name: p.name, groupName: p.groupName, groupId: p.groupId, location: guestHotelMap.get(p.id) || (p.groupId != null ? groupHotelMap.get(p.groupId) || null : null) })) : [];
       }
 
       // Fallback: if no transport-linked participants, derive from booking's guest group
@@ -200,13 +213,13 @@ export const getTodaysActivityInstances: RequestHandler = (req, res) => {
                 name: `${m.first_name || ''} ${m.last_name || ''}`.trim() || 'Unknown Member',
                 groupName: group?.group_name || memberInfo?.group_name || 'Unknown Group',
                 groupId: groupId,
-                location: guestHotelMap.get(m.id) || null,
+                location: guestHotelMap.get(m.id) || groupHotelMap.get(groupId) || null,
               }));
             } else {
               // Single guest fallback
               const g = queries.getGuestById().get(guestId) as { first_name?: string; last_name?: string } | undefined;
               if (g) {
-                participants = [{ id: guestId, name: `${g.first_name || ''} ${g.last_name || ''}`.trim() || 'Unknown Guest', groupName: memberInfo?.group_name || '', groupId: memberInfo?.group_id ?? null, location: guestHotelMap.get(guestId) || null }];
+                participants = [{ id: guestId, name: `${g.first_name || ''} ${g.last_name || ''}`.trim() || 'Unknown Guest', groupName: memberInfo?.group_name || '', groupId: memberInfo?.group_id ?? null, location: guestHotelMap.get(guestId) || (memberInfo?.group_id != null ? groupHotelMap.get(memberInfo.group_id) || null : null) }];
               }
             }
 
