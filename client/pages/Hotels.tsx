@@ -727,6 +727,121 @@ export default function Hotels() {
     setIsHotelDetailOpen(false);
   };
 
+  const handlePrintBooking = (booking: HotelBooking | null) => {
+    if (!booking) return;
+
+    const hotel = hotels.find(h => h.id === booking.hotel_id);
+    const nights = calculateNights(booking.check_in_date, booking.check_out_date);
+    const now = new Date();
+
+    const occupants = (() => {
+      const names: string[] = [];
+      if (booking.guest_name) names.push(booking.guest_name);
+      const remaining = Math.max(0, (booking.guests_count || 1) - names.length);
+      for (let i = 0; i < remaining; i++) names.push("");
+      return names;
+    })();
+
+    const statusTitle = (s: string) => (s || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    const html = `
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Hotel Booking — ${booking.booking_reference}</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    :root { --ink:#111827; --muted:#6b7280; --line:#e5e7eb; }
+    *{ box-sizing:border-box; }
+    body{ font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; color:var(--ink); }
+    .header{ display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid var(--ink); padding-bottom:8px; margin-bottom:14px; }
+    .title{ font-size:22px; font-weight:800; }
+    .meta{ color:var(--muted); font-size:12px; }
+    .pill{ display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); }
+    .status-confirmed{ background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+    .status-checked_in{ background:#ecfdf5; color:#047857; border-color:#a7f3d0; }
+    .status-checked_out{ background:#f3f4f6; color:#374151; border-color:#e5e7eb; }
+    .status-cancelled{ background:#fef2f2; color:#b91c1c; border-color:#fecaca; }
+
+    .block{ border:1px solid var(--line); border-radius:8px; padding:12px; margin:10px 0; page-break-inside:avoid; }
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:8px 16px; }
+    .row{ display:flex; gap:6px; font-size:12px; }
+    .label{ color:var(--muted); min-width:110px; }
+    table{ width:100%; border-collapse:collapse; margin-top:6px; }
+    th, td{ font-size:12px; text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+    th{ color:var(--muted); font-weight:600; }
+    .sig{ height:18px; border-bottom:1px solid #9ca3af; }
+    .section{ margin-top:10px; padding-top:8px; border-top:1px dashed var(--line); }
+    .footer{ margin-top:18px; border-top:2px solid var(--ink); padding-top:8px; text-align:center; color:var(--muted); font-size:11px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="title">Hotel Booking</div>
+      <div class="meta">Ref: ${booking.booking_reference} • Printed: ${now.toLocaleString()}</div>
+    </div>
+    <div class="pill status-${(booking.status||'confirmed').toLowerCase()}">${statusTitle(booking.status)}</div>
+  </div>
+
+  <div class="block">
+    <div class="grid">
+      <div class="row"><div class="label">Guest</div><div>${booking.guest_name}</div></div>
+      <div class="row"><div class="label">Group</div><div>${booking.group_name || '—'}</div></div>
+      <div class="row"><div class="label">Hotel</div><div>${hotel?.name || 'Unknown Hotel'}</div></div>
+      <div class="row"><div class="label">Room</div><div>${booking.room_type} • ${booking.room_number}</div></div>
+      <div class="row"><div class="label">Check-in</div><div>${new Date(booking.check_in_date).toLocaleDateString()}</div></div>
+      <div class="row"><div class="label">Check-out</div><div>${new Date(booking.check_out_date).toLocaleDateString()}</div></div>
+      <div class="row"><div class="label">Nights</div><div>${nights}</div></div>
+      <div class="row"><div class="label">Guests</div><div>${booking.guests_count}</div></div>
+      <div class="row"><div class="label">Rate / Night</div><div>$${booking.rate_per_night}</div></div>
+      <div class="row"><div class="label">Total</div><div><strong>$${booking.total_amount}</strong></div></div>
+    </div>
+    ${booking.special_requests ? `<div class="section"><div class="label" style="display:block;margin-bottom:4px;">Special Requests</div><div style="font-size:12px;">${booking.special_requests}</div></div>` : ''}
+  </div>
+
+  <div class="block">
+    <div style="font-weight:700; margin-bottom:6px;">Occupants (${booking.guests_count})</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:34%">Name</th>
+          <th style="width:33%">Signature</th>
+          <th style="width:33%">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${occupants.map((name, idx) => `
+          <tr>
+            <td>${name}</td>
+            <td><div class="sig"></div></td>
+            <td></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="block section">
+    <div style="font-weight:600; margin-bottom:6px;">Hotel Representative Signature</div>
+    <div class="sig" style="height:24px;"></div>
+    <div class="meta" style="margin-top:6px;">Date: ${now.toLocaleDateString()} • Time: ${now.toLocaleTimeString()}</div>
+  </div>
+
+  <div class="footer">Guest Acknowledgement: _________________________ Date: _________</div>
+</body>
+</html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.print();
+    w.close();
+  };
+
   // Handle guest count changes for individual bookings
   const handleGuestCountChange = (newCount: number) => {
     setBookingForm({
@@ -1877,7 +1992,7 @@ export default function Hotels() {
             <Button variant="outline" onClick={closeDetailViews}>
               Close
             </Button>
-            <Button onClick={() => window.print()}>
+            <Button onClick={() => handlePrintBooking(selectedBooking)}>
               Print
             </Button>
           </div>
