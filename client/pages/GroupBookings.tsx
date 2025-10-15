@@ -795,6 +795,10 @@ export default function GroupBookings() {
 
           <div class="info-grid">
             <div class="info-item">
+              <span class="info-label">Group ID:</span>
+              <span class="info-value">${group.id}</span>
+            </div>
+            <div class="info-item">
               <span class="info-label">Status:</span>
               <span class="info-value">
                 <span class="badge badge-${group.status}">${group.status.toUpperCase()}</span>
@@ -1635,6 +1639,7 @@ export default function GroupBookings() {
                   <div>
                     <h3 className="text-xl font-semibold">{selectedGroup.group_name}</h3>
                     <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline">ID #{selectedGroup.id}</Badge>
                       <Badge variant={getGroupTypeColor(selectedGroup.group_type)}>{selectedGroup.group_type}</Badge>
                       <Badge variant={getStatusColor(selectedGroup.status)}>{selectedGroup.status}</Badge>
                       {selectedGroup.bookings && selectedGroup.bookings.length > 0 && (
@@ -2737,6 +2742,7 @@ export default function GroupBookings() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
                       <h3 className="text-lg font-semibold text-foreground">{group.group_name}</h3>
+                      <Badge variant="outline">ID #{group.id}</Badge>
                       <Badge variant={getGroupTypeColor(group.group_type)}>{group.group_type}</Badge>
                       <Badge variant={getStatusColor(group.status)}>{group.status}</Badge>
                     </div>
