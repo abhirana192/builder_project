@@ -1222,7 +1222,16 @@ export const getGroupBookingsReport: RequestHandler = (req, res) => {
 
     const groups = queries
       .getGroupsReportInRange()
-      .all(endDate, startDate, statusFilter, statusFilter);
+      .all(
+        endDate,
+        startDate,
+        endDate,
+        startDate,
+        endDate,
+        startDate,
+        statusFilter,
+        statusFilter
+      );
 
     res.json(groups || []);
   } catch (error) {
