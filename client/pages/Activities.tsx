@@ -422,33 +422,35 @@ export default function Activities() {
       return;
     }
 
-    const participantIds = Array.from(selectedParticipants);
+    // Compute delta: only add participants not already assigned
+    const currentlyAssigned = assignedParticipants[selectedInstance.id] || [];
+    const assignedIds = new Set(currentlyAssigned.map(p => p.id));
+    const requestedIds = Array.from(selectedParticipants);
+    const toAddIds = requestedIds.filter(id => !assignedIds.has(id));
+
+    if (toAddIds.length === 0) {
+      toast({ title: 'No changes', description: 'All selected participants are already assigned.', variant: 'default' });
+      return;
+    }
 
     try {
       const response = await fetch(`/api/activities/instances/${selectedInstance.id}/participants`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          participant_ids: participantIds
-        })
+        body: JSON.stringify({ participant_ids: toAddIds })
       });
 
       if (response.ok) {
         const updatedInstance = await response.json();
 
-        // Update the attendance_count to match the actual participants assigned
-        const finalParticipantCount = participantIds.length;
-        updatedInstance.attendance_count = finalParticipantCount;
-
+        // Trust server-provided attendance_count (computed from DB after insert OR IGNORE)
         setInstances(instances.map(i => i.id === selectedInstance.id ? updatedInstance : i));
 
-        // Build the complete list of assigned participants based on selected IDs
-        const allAssignedParticipants: AssignedParticipant[] = [];
-
-        // Add from available participants (group members)
+        // Build added participants from sources and append to current list
+        const newlyAssigned: AssignedParticipant[] = [];
         availableParticipants.forEach(p => {
-          if (participantIds.includes(p.id)) {
-            allAssignedParticipants.push({
+          if (toAddIds.includes(p.id)) {
+            newlyAssigned.push({
               id: p.id,
               first_name: p.first_name,
               last_name: p.last_name,
@@ -458,11 +460,9 @@ export default function Activities() {
             });
           }
         });
-
-        // Add from available guests (individual guests)
         availableGuests.forEach(g => {
-          if (participantIds.includes(g.id)) {
-            allAssignedParticipants.push({
+          if (toAddIds.includes(g.id)) {
+            newlyAssigned.push({
               id: g.id,
               first_name: g.first_name,
               last_name: g.last_name,
@@ -473,27 +473,26 @@ export default function Activities() {
           }
         });
 
-        // Replace the entire list for this activity (don't append)
         setAssignedParticipants(prev => ({
           ...prev,
-          [selectedInstance.id]: allAssignedParticipants
+          [selectedInstance.id]: [...(prev[selectedInstance.id] || []), ...newlyAssigned]
         }));
 
         setIsAddParticipantsOpen(false);
         setSelectedInstance(null);
         setSelectedParticipants(new Set());
         toast({
-          title: "Success!",
-          description: `${participantIds.length} participants added to the activity`,
-          variant: "default",
+          title: 'Success!',
+          description: `${newlyAssigned.length} participant(s) added to the activity`,
+          variant: 'default',
         });
       }
     } catch (error) {
       console.error('Error adding participants:', error);
       toast({
-        title: "Error",
-        description: "Failed to add participants",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to add participants',
+        variant: 'destructive',
       });
     }
   };
@@ -744,13 +743,15 @@ export default function Activities() {
       const currentlyAssigned = assignedParticipants[instance.id] || [];
       const assignedIds = new Set(currentlyAssigned.map(p => p.id));
 
-      // Show all participants (don't filter out assigned ones)
-      setAvailableParticipants(allParticipants);
-      setAvailableGuests(individualGuests);
+      // Exclude already assigned from choices
+      const filteredGroupMembers = allParticipants.filter(p => !assignedIds.has(p.id));
+      const filteredGuests = individualGuests.filter((g: any) => !assignedIds.has(g.id));
+      setAvailableParticipants(filteredGroupMembers);
+      setAvailableGuests(filteredGuests);
       setGroups(groupsWithMembers); // Update groups state with members
 
-      // Pre-select already assigned participants
-      setSelectedParticipants(assignedIds);
+      // Start with no pre-selected participants (only new additions)
+      setSelectedParticipants(new Set());
       setParticipantSearchTerm("");
       setIsAddParticipantsOpen(true);
     } catch (error) {
