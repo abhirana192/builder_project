@@ -688,14 +688,16 @@ export default function Activities() {
     setSelectedInstance(instance);
 
     try {
-      // Fetch groups and individual guests
-      const [groupsResponse, guestsResponse] = await Promise.all([
+      // Fetch groups, individual guests, and currently assigned participants
+      const [groupsResponse, guestsResponse, assignedResponse] = await Promise.all([
         fetch('/api/groups'),
-        fetch('/api/guests')
+        fetch('/api/guests'),
+        fetch(`/api/activities/instances/${instance.id}/participants`)
       ]);
 
       const groupsData = await groupsResponse.json();
       const guestsData = await guestsResponse.json();
+      const assignedData = await assignedResponse.json();
 
       // Fetch detailed group information with members for each group
       const groupsWithMembers: Group[] = [];
@@ -734,14 +736,25 @@ export default function Activities() {
       // Filter out guests who are already part of groups to avoid duplicates
       const individualGuests = guestsData.filter((guest: any) => !groupMemberIds.has(guest.id));
 
-      // Get already assigned participants for this activity instance
-      const currentlyAssigned = assignedParticipants[instance.id] || [];
-      const assignedIds = new Set(currentlyAssigned.map(p => p.id));
+      // Use server-assigned participants if available (ensures correctness after refresh)
+      const normalizedAssigned = Array.isArray(assignedData) ? assignedData.map((p: any) => ({
+        id: p.id,
+        first_name: p.first_name,
+        last_name: p.last_name,
+        email: p.email || '',
+        group_name: p.group_name || undefined,
+        activity_instance_id: instance.id,
+      })) : [];
+
+      const assignedIds = new Set<number>(normalizedAssigned.map((p: any) => p.id));
 
       // Show all participants and pre-check already assigned for add/remove UX
       setAvailableParticipants(allParticipants);
       setAvailableGuests(individualGuests);
       setGroups(groupsWithMembers);
+
+      // Update assigned participants cache for this instance
+      setAssignedParticipants(prev => ({ ...prev, [instance.id]: normalizedAssigned }));
 
       // Pre-select already assigned participants
       setSelectedParticipants(assignedIds);
