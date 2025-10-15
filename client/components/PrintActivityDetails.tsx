@@ -37,7 +37,7 @@ interface ActivityInstance {
   attendance_count: number;
   max_participants: number;
   notes?: string;
-  location: string; // Added location
+  location?: string;
 }
 
 // Assuming AssignedParticipant is defined elsewhere or can be simplified for this context
@@ -102,7 +102,7 @@ const PrintActivityDetails: React.FC<PrintActivityDetailsProps> = ({ activities,
             <div class="activity-item">
               <div class="activity-name">${activity.activity_name}</div>
               <div class="details"><strong>Scheduled:</strong> ${formatDateTime(activity.scheduled_date, activity.scheduled_time)}</div>
-              <div class="details"><strong>Location:</strong> ${activity.location}</div>
+              ${activity.location ? `<div class="details"><strong>Location:</strong> ${activity.location}</div>` : ''}
               <div class="details"><strong>Guide:</strong> ${activity.guide_name || 'No guide assigned'}</div>
               <div class="details"><strong>Participants:</strong> ${activity.attendance_count} / ${activity.max_participants}</div>
               ${activity.booking_reference ? `<div class="details"><strong>Booking Ref:</strong> ${activity.booking_reference}</div>` : ''}
