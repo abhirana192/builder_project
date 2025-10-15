@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { fetchWithTimeout } from "@/lib/fetch-utils";
 import { VehicleDeleteDialog } from "@/components/VehicleDeleteDialog";
 import { VehicleAddDialog } from "@/components/VehicleAddDialog";
 import { DeleteScheduleDialog } from "@/components/DeleteScheduleDialog";
@@ -206,10 +207,10 @@ export default function Transport() {
     try {
       // Use Promise.allSettled to avoid one failing request cancelling others
       const results = await Promise.allSettled([
-        fetch("/api/vehicles"),
-        fetch("/api/transport/schedules"),
-        fetch("/api/staff"), // Get all staff, we'll filter drivers
-        fetch("/api/groups"),
+        fetchWithTimeout("/api/vehicles"),
+        fetchWithTimeout("/api/transport/schedules"),
+        fetchWithTimeout("/api/staff"), // Get all staff, we'll filter drivers
+        fetchWithTimeout("/api/groups"),
       ]);
 
       const safeParse = async (resResult: any, name: string) => {
@@ -256,7 +257,7 @@ export default function Transport() {
             groupsData.map(async (group: any) => {
               if (!group || !group.id) return group;
               try {
-                const groupDetailResponse = await fetch(
+                const groupDetailResponse = await fetchWithTimeout(
                   `/api/groups/${group.id}`,
                 );
                 if (groupDetailResponse.ok) {
@@ -381,7 +382,7 @@ export default function Transport() {
 
   const updateVehicleStatus = async (vehicleId: number, newStatus: string) => {
     try {
-      const response = await fetch(`/api/vehicles/${vehicleId}/status`, {
+      const response = await fetchWithTimeout(`/api/vehicles/${vehicleId}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -1097,7 +1098,7 @@ export default function Transport() {
 
       console.log("Submitting transport schedule:", scheduleData);
 
-      const response = await fetch("/api/transport/schedules", {
+      const response = await fetchWithTimeout("/api/transport/schedules", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1143,7 +1144,7 @@ export default function Transport() {
 
   const handleStatusChange = async (scheduleId: number, newStatus: string) => {
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `/api/transport/schedules/${scheduleId}/status`,
         {
           method: "PATCH",
@@ -1186,7 +1187,7 @@ export default function Transport() {
     if (!scheduleToDelete) return;
 
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `/api/transport/schedules/${scheduleToDelete.id}`,
         {
           method: "DELETE",
@@ -1210,7 +1211,7 @@ export default function Transport() {
     if (!selectedScheduleForDetail || !editingDropoffLocation.trim()) return;
 
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `/api/transport/schedules/${selectedScheduleForDetail.id}/dropoff-location`,
         {
           method: "PATCH",
@@ -1257,7 +1258,7 @@ export default function Transport() {
     if (!selectedScheduleForDetail || !editingPickupLocation.trim()) return;
 
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `/api/transport/schedules/${selectedScheduleForDetail.id}/pickup-location`,
         {
           method: "PATCH",
