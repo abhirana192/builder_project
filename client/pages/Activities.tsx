@@ -769,23 +769,134 @@ export default function Activities() {
   };
 
   const handlePrintActivity = (instance: ActivityInstance | null) => {
-    if (instance) {
-      // For a real application, you might generate a specific print-friendly view
-      // or PDF. For this example, we'll just trigger the browser's print dialog.
-      console.log("Printing activity instance:", instance);
-      toast({
-        title: "Printing Activity",
-        description: `Preparing to print details for ${instance.activity_name}.`,
-        variant: "default",
-      });
-      window.print(); // Triggers the browser's print dialog
-    } else {
-      toast({
-        title: "Print Error",
-        description: "No activity instance selected for printing.",
-        variant: "destructive",
-      });
+    if (!instance) {
+      toast({ title: "Print Error", description: "No activity selected.", variant: "destructive" });
+      return;
     }
+
+    const win = window.open('', '_blank');
+    if (!win) {
+      toast({ title: "Print Failed", description: "Please allow pop-ups to print.", variant: "destructive" });
+      return;
+    }
+
+    const location = (() => {
+      try {
+        const act = activities.find(a => a.id === instance.activity_id);
+        return act?.location || '';
+      } catch {
+        return '';
+      }
+    })();
+
+    const parts = (assignedParticipants[instance.id] || []).slice().sort((a, b) => {
+      const ga = (a.group_name || '');
+      const gb = (b.group_name || '');
+      if (ga !== gb) return ga.localeCompare(gb);
+      return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+    });
+
+    const statusTitle = (s: string) => (s || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    const html = `
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Activity — ${instance.activity_name}</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    :root { --ink:#111827; --muted:#6b7280; --line:#e5e7eb; }
+    *{ box-sizing:border-box; }
+    body{ font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; color:var(--ink); }
+    .header{ display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid var(--ink); padding-bottom:8px; margin-bottom:14px; }
+    .title{ font-size:22px; font-weight:800; }
+    .meta{ color:var(--muted); font-size:12px; }
+    .pill{ display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); }
+    .status-scheduled{ background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+    .status-in_progress{ background:#fff7ed; color:#c2410c; border-color:#fed7aa; }
+    .status-completed{ background:#ecfdf5; color:#047857; border-color:#a7f3d0; }
+    .status-cancelled{ background:#fef2f2; color:#b91c1c; border-color:#fecaca; }
+
+    .block{ border:1px solid var(--line); border-radius:8px; padding:12px; margin:10px 0; page-break-inside:avoid; }
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:8px 16px; }
+    .row{ display:flex; gap:6px; font-size:12px; }
+    .label{ color:var(--muted); min-width:90px; }
+
+    .section{ margin-top:10px; padding-top:8px; border-top:1px dashed var(--line); }
+    table{ width:100%; border-collapse:collapse; margin-top:6px; }
+    th, td{ font-size:12px; text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+    th{ color:var(--muted); font-weight:600; }
+    .sig{ height:18px; border-bottom:1px solid #9ca3af; }
+
+    .footer{ margin-top:18px; border-top:2px solid var(--ink); padding-top:8px; text-align:center; color:var(--muted); font-size:11px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="title">${instance.activity_name}</div>
+      <div class="meta">Date: ${new Date(instance.scheduled_date).toLocaleDateString()} • Printed: ${new Date().toLocaleString()}</div>
+    </div>
+    <div class="pill status-${(instance.status||'scheduled').toLowerCase()}">${statusTitle(instance.status)}</div>
+  </div>
+
+  <div class="block">
+    <div class="grid">
+      <div class="row"><div class="label">Time</div><div>${instance.scheduled_time}</div></div>
+      <div class="row"><div class="label">Guide</div><div>${instance.guide_name || '—'}</div></div>
+      <div class="row"><div class="label">Location</div><div>${location || '—'}</div></div>
+      <div class="row"><div class="label">Participants</div><div>${parts.length} / ${instance.max_participants}</div></div>
+      ${instance.booking_reference ? `<div class="row"><div class="label">Booking Ref</div><div>${instance.booking_reference}</div></div>` : ''}
+      ${instance.weather_conditions ? `<div class="row"><div class="label">Weather</div><div>${instance.weather_conditions}</div></div>` : ''}
+    </div>
+    ${instance.notes ? `<div class="section"><div class="label" style="display:block;margin-bottom:4px;">Notes</div><div style="font-size:12px;">${instance.notes}</div></div>` : ''}
+  </div>
+
+  <div class="block">
+    <div style="font-weight:700; margin-bottom:6px;">Participants (${parts.length})</div>
+    ${parts.length === 0 ? `<div class="meta">No participants assigned.</div>` : `
+      <table>
+        <thead>
+          <tr>
+            <th style="width:32%">Name</th>
+            <th style="width:26%">Group</th>
+            <th style="width:26%">Email</th>
+            <th style="width:16%">Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${parts
+            .map(p => `
+              <tr>
+                <td>${p.first_name} ${p.last_name}</td>
+                <td>${p.group_name || 'Individual Guest'}</td>
+                <td>${p.email || ''}</td>
+                <td><div class="sig"></div></td>
+              </tr>
+            `)
+            .join('')}
+        </tbody>
+      </table>
+    `}
+  </div>
+
+  <div class="block section">
+    <div style="font-weight:600; margin-bottom:6px;">Tour Guide Signature</div>
+    <div class="sig" style="height:24px;"></div>
+  </div>
+
+  <div class="footer">Manager Signature: _________________________ Time: _________</div>
+</body>
+</html>`;
+
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
+
+    toast({ title: "Print Ready", description: `Prepared ${instance.activity_name} for printing.` });
   };
 
   const openAddParticipants = async (instance: ActivityInstance) => {
