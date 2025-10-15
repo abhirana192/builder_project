@@ -144,6 +144,8 @@ export default function Hotels() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [groupIdQuery, setGroupIdQuery] = useState("");
   const [connectionError, setConnectionError] = useState<string | null>(null);
   
   // Dialog states
@@ -800,10 +802,44 @@ export default function Hotels() {
 
   // Filtering
   const filteredBookings = bookings.filter(booking => {
-    const matchesSearch = booking.guest_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         booking.booking_reference?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (
+      booking.guest_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.booking_reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (booking.group_name ? booking.group_name.toLowerCase().includes(searchTerm.toLowerCase()) : false)
+    );
+
     const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
-    return matchesSearch && matchesStatus;
+
+    const matchesGroupId = (() => {
+      if (!groupIdQuery) return true;
+      const gid = parseInt(groupIdQuery, 10);
+      if (!gid) return false;
+      const grp = groups.find((g:any) => g.id === gid);
+      if (!grp) return false;
+      const gname = (grp.group_name || '').toLowerCase();
+      return (booking.group_name || '').toLowerCase() === gname;
+    })();
+
+    const matchesDate = (() => {
+      if (!selectedDate) return true;
+      const toYMD = (str: string) => {
+        try {
+          const d = new Date(str);
+          const y = d.getFullYear();
+          const m = String(d.getMonth()+1).padStart(2,'0');
+          const da = String(d.getDate()).padStart(2,'0');
+          if (!y || isNaN(y)) return '';
+          return `${y}-${m}-${da}`;
+        } catch { return ''; }
+      };
+      const sel = selectedDate;
+      const inY = toYMD(booking.check_in_date);
+      const outY = toYMD(booking.check_out_date);
+      if (!inY || !outY) return false;
+      return sel >= inY && sel <= outY;
+    })();
+
+    return matchesSearch && matchesStatus && matchesGroupId && matchesDate;
   });
 
   if (loading) {
@@ -948,6 +984,19 @@ export default function Hotels() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-[170px]"
+                  />
+                  <Input
+                    placeholder="Group ID"
+                    inputMode="numeric"
+                    value={groupIdQuery}
+                    onChange={(e) => setGroupIdQuery(e.target.value.replace(/[^0-9]/g, ""))}
+                    className="w-[130px]"
+                  />
                   <Filter className="h-4 w-4 text-muted-foreground" />
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-[150px]">
