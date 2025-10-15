@@ -384,13 +384,16 @@ export default function Transport() {
 
   const updateVehicleStatus = async (vehicleId: number, newStatus: string) => {
     try {
-      const response = await fetchWithTimeout(`/api/vehicles/${vehicleId}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetchWithTimeout(
+        `/api/vehicles/${vehicleId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
         },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      );
 
       if (response.ok) {
         fetchData();
@@ -3530,7 +3533,9 @@ export default function Transport() {
                     placeholder="Group ID"
                     inputMode="numeric"
                     value={groupIdQuery}
-                    onChange={(e) => setGroupIdQuery(e.target.value.replace(/[^0-9]/g, ""))}
+                    onChange={(e) =>
+                      setGroupIdQuery(e.target.value.replace(/[^0-9]/g, ""))
+                    }
                     className="w-[130px]"
                   />
                   <Filter className="h-4 w-4 text-muted-foreground" />
@@ -3598,7 +3603,8 @@ export default function Transport() {
                 if (!t.pickup) return false;
                 const s = t.pickup;
                 // Status filter
-                if (statusFilter !== "all" && s.status !== statusFilter) return false;
+                if (statusFilter !== "all" && s.status !== statusFilter)
+                  return false;
                 // Group ID filter
                 if (groupIdQuery) {
                   const gid = parseInt(groupIdQuery, 10);
@@ -3608,19 +3614,33 @@ export default function Transport() {
                 if (selectedDate) {
                   try {
                     const d = new Date(s.pickup_time);
-                    const dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+                    const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
                     if (dStr !== selectedDate) return false;
                   } catch {}
                 }
                 // Name search (group or passenger)
                 if (passengerSearchTerm) {
                   const q = passengerSearchTerm.toLowerCase();
-                  const groupMatch = (t.groupName || "").toLowerCase().includes(q);
+                  const groupMatch = (t.groupName || "")
+                    .toLowerCase()
+                    .includes(q);
                   let paxMatch = false;
-                  const groupsArr: any[] = Array.isArray(s.groups) ? (s.groups as any[]) : [];
+                  const groupsArr: any[] = Array.isArray(s.groups)
+                    ? (s.groups as any[])
+                    : [];
                   for (const g of groupsArr) {
-                    const name = (g && (g.name || g.group_name || (g.first_name && g.last_name ? `${g.first_name} ${g.last_name}` : ""))) || "";
-                    if (String(name).toLowerCase().includes(q)) { paxMatch = true; break; }
+                    const name =
+                      (g &&
+                        (g.name ||
+                          g.group_name ||
+                          (g.first_name && g.last_name
+                            ? `${g.first_name} ${g.last_name}`
+                            : ""))) ||
+                      "";
+                    if (String(name).toLowerCase().includes(q)) {
+                      paxMatch = true;
+                      break;
+                    }
                   }
                   if (!groupMatch && !paxMatch) return false;
                 }
@@ -3759,7 +3779,9 @@ export default function Transport() {
                     placeholder="Group ID"
                     inputMode="numeric"
                     value={groupIdQuery}
-                    onChange={(e) => setGroupIdQuery(e.target.value.replace(/[^0-9]/g, ""))}
+                    onChange={(e) =>
+                      setGroupIdQuery(e.target.value.replace(/[^0-9]/g, ""))
+                    }
                     className="w-[130px]"
                   />
                   <Filter className="h-4 w-4 text-muted-foreground" />
@@ -3826,7 +3848,8 @@ export default function Transport() {
                 if (!t.dropoff) return false;
                 const s = t.dropoff;
                 // Status filter
-                if (statusFilter !== "all" && s.status !== statusFilter) return false;
+                if (statusFilter !== "all" && s.status !== statusFilter)
+                  return false;
                 // Group ID filter
                 if (groupIdQuery) {
                   const gid = parseInt(groupIdQuery, 10);
@@ -3836,19 +3859,33 @@ export default function Transport() {
                 if (selectedDate) {
                   try {
                     const d = new Date(s.pickup_time);
-                    const dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+                    const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
                     if (dStr !== selectedDate) return false;
                   } catch {}
                 }
                 // Name search (group or passenger)
                 if (passengerSearchTerm) {
                   const q = passengerSearchTerm.toLowerCase();
-                  const groupMatch = (t.groupName || "").toLowerCase().includes(q);
+                  const groupMatch = (t.groupName || "")
+                    .toLowerCase()
+                    .includes(q);
                   let paxMatch = false;
-                  const groupsArr: any[] = Array.isArray(s.groups) ? (s.groups as any[]) : [];
+                  const groupsArr: any[] = Array.isArray(s.groups)
+                    ? (s.groups as any[])
+                    : [];
                   for (const g of groupsArr) {
-                    const name = (g && (g.name || g.group_name || (g.first_name && g.last_name ? `${g.first_name} ${g.last_name}` : ""))) || "";
-                    if (String(name).toLowerCase().includes(q)) { paxMatch = true; break; }
+                    const name =
+                      (g &&
+                        (g.name ||
+                          g.group_name ||
+                          (g.first_name && g.last_name
+                            ? `${g.first_name} ${g.last_name}`
+                            : ""))) ||
+                      "";
+                    if (String(name).toLowerCase().includes(q)) {
+                      paxMatch = true;
+                      break;
+                    }
                   }
                   if (!groupMatch && !paxMatch) return false;
                 }

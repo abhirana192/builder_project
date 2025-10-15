@@ -1,25 +1,44 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { DeleteHotelBookingDialog } from "@/components/DeleteHotelBookingDialog";
 // Remove the problematic fetchWithTimeout import
-import { 
-  Hotel, 
-  Star, 
-  Users, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Clock, 
-  CheckCircle, 
-  AlertTriangle, 
+import {
+  Hotel,
+  Star,
+  Users,
+  MapPin,
+  Phone,
+  Mail,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
   XCircle,
   Plus,
   Search,
@@ -28,7 +47,7 @@ import {
   Bed,
   Edit3,
   Trash2,
-  DollarSign
+  DollarSign,
 } from "lucide-react";
 
 // Interfaces following Activities pattern
@@ -82,37 +101,46 @@ export default function Hotels() {
   // Test basic connectivity
   const testConnectivity = async () => {
     try {
-      console.log('🔄 Testing server connectivity...');
-      const response = await fetch('/api/ping', {
-        method: 'GET',
-        cache: 'no-cache',
-        headers: { 'Cache-Control': 'no-cache' }
+      console.log("🔄 Testing server connectivity...");
+      const response = await fetch("/api/ping", {
+        method: "GET",
+        cache: "no-cache",
+        headers: { "Cache-Control": "no-cache" },
       });
       const isConnected = response.ok;
-      console.log(`📡 Server connectivity: ${isConnected ? '✅ Connected' : '❌ Failed'}`);
+      console.log(
+        `📡 Server connectivity: ${isConnected ? "✅ Connected" : "❌ Failed"}`,
+      );
       return isConnected;
     } catch (error) {
-      console.error('❌ Connectivity test failed:', error);
+      console.error("❌ Connectivity test failed:", error);
       return false;
     }
   };
 
   // Safe fetch function with retry mechanism
-  const safeFetch = async (url: string, options: RequestInit = {}, retries = 2) => {
+  const safeFetch = async (
+    url: string,
+    options: RequestInit = {},
+    retries = 2,
+  ) => {
     for (let attempt = 1; attempt <= retries + 1; attempt++) {
       try {
         console.log(`🔄 Safe fetching (attempt ${attempt}): ${url}`);
 
         // Add a small delay for retries
         if (attempt > 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
         }
 
         const response = await fetch(url, options);
         console.log(`✅ Safe fetch completed: ${url} - ${response.status}`);
         return response;
       } catch (error) {
-        console.error(`❌ Safe fetch failed (attempt ${attempt}): ${url}`, error);
+        console.error(
+          `❌ Safe fetch failed (attempt ${attempt}): ${url}`,
+          error,
+        );
 
         if (attempt === retries + 1) {
           // Last attempt failed, throw the error
@@ -139,7 +167,7 @@ export default function Hotels() {
     checked_out_bookings: 0,
     cancelled_bookings: 0,
     total_revenue: 0,
-    avg_booking_value: 0
+    avg_booking_value: 0,
   });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -147,50 +175,52 @@ export default function Hotels() {
   const [selectedDate, setSelectedDate] = useState("");
   const [groupIdQuery, setGroupIdQuery] = useState("");
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  
+
   // Dialog states
   const [isCreateHotelOpen, setIsCreateHotelOpen] = useState(false);
   const [isCreateBookingOpen, setIsCreateBookingOpen] = useState(false);
   const [isBookingDetailOpen, setIsBookingDetailOpen] = useState(false);
   const [isHotelDetailOpen, setIsHotelDetailOpen] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<HotelBooking | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<HotelBooking | null>(
+    null,
+  );
   const [selectedHotel, setSelectedHotel] = useState<HotelData | null>(null);
 
   // Add stable dimensions to prevent layout thrashing
   const [isInitialized, setIsInitialized] = useState(false);
-  
+
   // Form states
   const [hotelForm, setHotelForm] = useState({
-    name: '',
-    address: '',
-    phone: '',
-    email: '',
+    name: "",
+    address: "",
+    phone: "",
+    email: "",
     star_rating: 3,
     total_rooms: 0,
-    contact_person: '',
-    special_rates: '',
-    amenities: '',
-    check_in_time: '15:00',
-    check_out_time: '11:00',
-    is_partner: false
+    contact_person: "",
+    special_rates: "",
+    amenities: "",
+    check_in_time: "15:00",
+    check_out_time: "11:00",
+    is_partner: false,
   });
 
   const [bookingForm, setBookingForm] = useState({
-    booking_type: 'individual', // 'individual' or 'group'
-    guest_name: '',
-    selected_guest_id: '',
-    guest_group_name: '', // Group name for individual guest
-    selected_group_id: '',
+    booking_type: "individual", // 'individual' or 'group'
+    guest_name: "",
+    selected_guest_id: "",
+    guest_group_name: "", // Group name for individual guest
+    selected_group_id: "",
     selected_members: [] as number[], // Array of guest IDs for multi-selection
     individual_selected_guests: [] as number[], // For individual booking multi-guest selection
-    hotel_id: '',
-    room_number: '',
-    room_type: 'Standard',
-    check_in_date: '',
-    check_out_date: '',
+    hotel_id: "",
+    room_number: "",
+    room_type: "Standard",
+    check_in_date: "",
+    check_out_date: "",
     guests_count: 1,
     rate_per_night: 150,
-    special_requests: ''
+    special_requests: "",
   });
 
   // Additional state for group booking management
@@ -200,7 +230,9 @@ export default function Hotels() {
 
   // Additional state for individual guest multi-selection
   const [individualGuestGroup, setIndividualGuestGroup] = useState<any>(null);
-  const [individualGroupMembers, setIndividualGroupMembers] = useState<any[]>([]);
+  const [individualGroupMembers, setIndividualGroupMembers] = useState<any[]>(
+    [],
+  );
 
   useEffect(() => {
     fetchData();
@@ -212,15 +244,17 @@ export default function Hotels() {
   // Simple data fetching following Activities pattern
   const fetchData = async () => {
     setLoading(true);
-    console.log('🏨 Fetching hotels data...');
+    console.log("🏨 Fetching hotels data...");
 
     // Clear previous errors
     setConnectionError(null);
 
     // Check network connectivity first
     if (!navigator.onLine) {
-      console.error('❌ No internet connection');
-      setConnectionError('No internet connection. Please check your network and try again.');
+      console.error("❌ No internet connection");
+      setConnectionError(
+        "No internet connection. Please check your network and try again.",
+      );
       setLoading(false);
       return;
     }
@@ -228,8 +262,10 @@ export default function Hotels() {
     // Test server connectivity
     const isConnected = await testConnectivity();
     if (!isConnected) {
-      console.error('❌ Server is not reachable');
-      setConnectionError('Unable to connect to server. Please try again in a moment.');
+      console.error("❌ Server is not reachable");
+      setConnectionError(
+        "Unable to connect to server. Please try again in a moment.",
+      );
       setLoading(false);
       return;
     }
@@ -239,82 +275,88 @@ export default function Hotels() {
 
     // Fetch each endpoint independently with error handling
     try {
-      const hotelsRes = await safeFetch('/api/hotels');
+      const hotelsRes = await safeFetch("/api/hotels");
       if (hotelsRes.ok) {
         const hotelsData = await hotelsRes.json();
         setHotels(hotelsData);
-        console.log('✅ Hotels loaded:', hotelsData.length);
+        console.log("✅ Hotels loaded:", hotelsData.length);
         successCount++;
       } else {
-        console.error('❌ Failed to fetch hotels:', hotelsRes.status);
+        console.error("❌ Failed to fetch hotels:", hotelsRes.status);
       }
     } catch (error) {
-      console.error('❌ Error fetching hotels:', error);
+      console.error("❌ Error fetching hotels:", error);
     }
 
     try {
-      const bookingsRes = await safeFetch('/api/hotel-bookings');
+      const bookingsRes = await safeFetch("/api/hotel-bookings");
       if (bookingsRes.ok) {
         const bookingsData = await bookingsRes.json();
         setBookings(bookingsData);
-        console.log('✅ Bookings loaded:', bookingsData.length);
+        console.log("✅ Bookings loaded:", bookingsData.length);
         successCount++;
       } else {
-        console.error('❌ Failed to fetch bookings:', bookingsRes.status);
+        console.error("❌ Failed to fetch bookings:", bookingsRes.status);
       }
     } catch (error) {
-      console.error('❌ Error fetching bookings:', error);
+      console.error("❌ Error fetching bookings:", error);
     }
 
     try {
-      const groupsRes = await safeFetch('/api/groups');
+      const groupsRes = await safeFetch("/api/groups");
       if (groupsRes.ok) {
         const groupsData = await groupsRes.json();
         setGroups(groupsData);
-        console.log('✅ Groups loaded:', groupsData.length);
+        console.log("✅ Groups loaded:", groupsData.length);
         successCount++;
       } else {
-        console.error('❌ Failed to fetch groups:', groupsRes.status);
+        console.error("❌ Failed to fetch groups:", groupsRes.status);
       }
     } catch (error) {
-      console.error('❌ Error fetching groups:', error);
+      console.error("❌ Error fetching groups:", error);
     }
 
     try {
-      const guestsRes = await safeFetch('/api/guests');
+      const guestsRes = await safeFetch("/api/guests");
       if (guestsRes.ok) {
         const guestsData = await guestsRes.json();
         setGuests(guestsData);
-        console.log('✅ Guests loaded:', guestsData.length);
+        console.log("✅ Guests loaded:", guestsData.length);
         successCount++;
       } else {
-        console.error('❌ Failed to fetch guests:', guestsRes.status);
+        console.error("❌ Failed to fetch guests:", guestsRes.status);
       }
     } catch (error) {
-      console.error('❌ Error fetching guests:', error);
+      console.error("❌ Error fetching guests:", error);
     }
 
     try {
-      const statsRes = await safeFetch('/api/hotel-stats');
+      const statsRes = await safeFetch("/api/hotel-stats");
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
-        console.log('✅ Stats loaded:', statsData);
+        console.log("✅ Stats loaded:", statsData);
         successCount++;
       } else {
-        console.error('❌ Failed to fetch stats:', statsRes.status);
+        console.error("❌ Failed to fetch stats:", statsRes.status);
       }
     } catch (error) {
-      console.error('❌ Error fetching stats:', error);
+      console.error("❌ Error fetching stats:", error);
     }
 
-    console.log(`📊 Data loading complete: ${successCount}/${totalRequests} successful`);
+    console.log(
+      `📊 Data loading complete: ${successCount}/${totalRequests} successful`,
+    );
 
     // Show a user-friendly message if most requests failed
     if (successCount === 0) {
-      console.error('❌ All API requests failed. Please check your connection and try again.');
+      console.error(
+        "❌ All API requests failed. Please check your connection and try again.",
+      );
     } else if (successCount < totalRequests) {
-      console.warn(`⚠️ Some data could not be loaded (${successCount}/${totalRequests} successful)`);
+      console.warn(
+        `⚠️ Some data could not be loaded (${successCount}/${totalRequests} successful)`,
+      );
     }
 
     setLoading(false);
@@ -323,10 +365,10 @@ export default function Hotels() {
   // CRUD operations following Activities pattern
   const handleCreateHotel = async () => {
     try {
-      const response = await fetch('/api/hotels', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(hotelForm)
+      const response = await fetch("/api/hotels", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(hotelForm),
       });
 
       if (response.ok) {
@@ -336,29 +378,39 @@ export default function Hotels() {
         resetHotelForm();
       }
     } catch (error) {
-      console.error('Error creating hotel:', error);
+      console.error("Error creating hotel:", error);
     }
   };
 
   const handleCreateBooking = async () => {
     try {
       // Calculate total amount
-      const nights = calculateNights(bookingForm.check_in_date, bookingForm.check_out_date);
+      const nights = calculateNights(
+        bookingForm.check_in_date,
+        bookingForm.check_out_date,
+      );
       const total_amount = nights * bookingForm.rate_per_night;
 
       // For multi-guest individual bookings, create guest names list
       let guestNames = bookingForm.guest_name;
-      let primaryGuestId = bookingForm.selected_guest_id ? parseInt(bookingForm.selected_guest_id) : null;
+      let primaryGuestId = bookingForm.selected_guest_id
+        ? parseInt(bookingForm.selected_guest_id)
+        : null;
 
-      if (bookingForm.guests_count > 1 && bookingForm.individual_selected_guests.length > 1) {
+      if (
+        bookingForm.guests_count > 1 &&
+        bookingForm.individual_selected_guests.length > 1
+      ) {
         // Create comma-separated list of guest names
         const selectedGuestNames = bookingForm.individual_selected_guests
-          .map(guestId => {
-            const guest = individualGroupMembers.find(m => m.id === guestId) || guests.find(g => g.id === guestId);
-            return guest ? `${guest.first_name} ${guest.last_name}` : '';
+          .map((guestId) => {
+            const guest =
+              individualGroupMembers.find((m) => m.id === guestId) ||
+              guests.find((g) => g.id === guestId);
+            return guest ? `${guest.first_name} ${guest.last_name}` : "";
           })
-          .filter(name => name)
-          .join(', ');
+          .filter((name) => name)
+          .join(", ");
 
         guestNames = selectedGuestNames || bookingForm.guest_name;
         // Use the first selected guest as primary
@@ -378,87 +430,95 @@ export default function Hotels() {
         rate_per_night: bookingForm.rate_per_night,
         total_amount: total_amount,
         special_requests: bookingForm.special_requests,
-        booking_reference: `HB-${Date.now()}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`
+        booking_reference: `HB-${Date.now()}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`,
       };
 
-      console.log('🏨 Creating booking with data:', bookingData);
+      console.log("🏨 Creating booking with data:", bookingData);
 
-      const response = await safeFetch('/api/hotel-bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bookingData)
+      const response = await safeFetch("/api/hotel-bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookingData),
       });
 
       if (response.ok) {
         const newBooking = await response.json();
-        console.log('✅ Booking created successfully:', newBooking);
+        console.log("✅ Booking created successfully:", newBooking);
         // Refresh data to get updated list
         fetchData();
         setIsCreateBookingOpen(false);
         resetBookingForm();
       } else {
-        console.error('❌ Failed to create booking:', response.status);
+        console.error("❌ Failed to create booking:", response.status);
       }
     } catch (error) {
-      console.error('❌ Error creating booking:', error);
+      console.error("❌ Error creating booking:", error);
     }
   };
 
-  const handleUpdateBookingStatus = async (bookingId: number, status: string) => {
+  const handleUpdateBookingStatus = async (
+    bookingId: number,
+    status: string,
+  ) => {
     try {
-      const response = await safeFetch(`/api/hotel-bookings/${bookingId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      });
+      const response = await safeFetch(
+        `/api/hotel-bookings/${bookingId}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        },
+      );
 
       if (response.ok) {
         // Update local state
-        setBookings(bookings.map(booking => 
-          booking.id === bookingId ? { ...booking, status } : booking
-        ));
+        setBookings(
+          bookings.map((booking) =>
+            booking.id === bookingId ? { ...booking, status } : booking,
+          ),
+        );
         // Refresh stats
         fetchData();
       }
     } catch (error) {
-      console.error('Error updating booking status:', error);
+      console.error("Error updating booking status:", error);
     }
   };
 
   const resetHotelForm = () => {
     setHotelForm({
-      name: '',
-      address: '',
-      phone: '',
-      email: '',
+      name: "",
+      address: "",
+      phone: "",
+      email: "",
       star_rating: 3,
       total_rooms: 0,
-      contact_person: '',
-      special_rates: '',
-      amenities: '',
-      check_in_time: '15:00',
-      check_out_time: '11:00',
-      is_partner: false
+      contact_person: "",
+      special_rates: "",
+      amenities: "",
+      check_in_time: "15:00",
+      check_out_time: "11:00",
+      is_partner: false,
     });
   };
 
   const resetBookingForm = () => {
     setBookingForm({
-      booking_type: 'individual',
-      guest_name: '',
-      selected_guest_id: '',
-      guest_group_name: '',
-      selected_group_id: '',
+      booking_type: "individual",
+      guest_name: "",
+      selected_guest_id: "",
+      guest_group_name: "",
+      selected_group_id: "",
       selected_members: [],
       individual_selected_guests: [],
-      hotel_id: '',
-      room_number: '',
-      room_type: 'Standard',
-      check_in_date: '',
-      check_out_date: '',
+      hotel_id: "",
+      room_number: "",
+      room_type: "Standard",
+      check_in_date: "",
+      check_out_date: "",
       guests_count: 1,
       rate_per_night: 150,
-      special_requests: ''
+      special_requests: "",
     });
     setSelectedGroup(null);
     setGroupMembers([]);
@@ -469,11 +529,11 @@ export default function Hotels() {
 
   // Fetch guest group information when individual guest is selected
   const handleIndividualGuestSelection = async (guestId: string) => {
-    console.log('🔄 Fetching guest group info for ID:', guestId);
+    console.log("🔄 Fetching guest group info for ID:", guestId);
 
-    const guest = guests.find(g => g.id.toString() === guestId);
+    const guest = guests.find((g) => g.id.toString() === guestId);
     if (!guest) {
-      console.error('❌ Guest not found in local data');
+      console.error("❌ Guest not found in local data");
       return;
     }
 
@@ -482,8 +542,8 @@ export default function Hotels() {
       ...bookingForm,
       selected_guest_id: guestId,
       guest_name: `${guest.first_name} ${guest.last_name}`,
-      guest_group_name: '',
-      individual_selected_guests: [parseInt(guestId)] // Start with the selected guest
+      guest_group_name: "",
+      individual_selected_guests: [parseInt(guestId)], // Start with the selected guest
     };
 
     try {
@@ -491,7 +551,10 @@ export default function Hotels() {
       const response = await safeFetch(`/api/guests/${guestId}/group`);
       if (response.ok) {
         const guestWithGroup = await response.json();
-        console.log('✅ Guest group info loaded:', guestWithGroup.group_name || 'No group');
+        console.log(
+          "✅ Guest group info loaded:",
+          guestWithGroup.group_name || "No group",
+        );
 
         if (guestWithGroup.group_name && guestWithGroup.group_id) {
           // Fetch group members for multi-selection
@@ -504,22 +567,22 @@ export default function Hotels() {
 
         setBookingForm({
           ...baseForm,
-          guest_group_name: guestWithGroup.group_name || ''
+          guest_group_name: guestWithGroup.group_name || "",
         });
       } else if (response.status === 404) {
         // Guest has no group - this is normal
-        console.log('ℹ️ Guest has no group');
+        console.log("ℹ️ Guest has no group");
         setBookingForm(baseForm);
         setIndividualGuestGroup(null);
         setIndividualGroupMembers([]);
       } else {
-        console.error('❌ Failed to fetch guest group info:', response.status);
+        console.error("❌ Failed to fetch guest group info:", response.status);
         setBookingForm(baseForm);
         setIndividualGuestGroup(null);
         setIndividualGroupMembers([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching guest group information:', error);
+      console.error("❌ Error fetching guest group information:", error);
       // Still set the guest even if group fetch fails
       setBookingForm(baseForm);
       setIndividualGuestGroup(null);
@@ -530,18 +593,24 @@ export default function Hotels() {
   // Fetch group members for individual guest selection
   const fetchIndividualGroupMembers = async (groupId: string) => {
     try {
-      console.log('🔄 Fetching group members for individual selection:', groupId);
+      console.log(
+        "🔄 Fetching group members for individual selection:",
+        groupId,
+      );
       const membersResponse = await safeFetch(`/api/groups/${groupId}/members`);
       if (membersResponse.ok) {
         const membersData = await membersResponse.json();
         setIndividualGroupMembers(membersData);
-        console.log('✅ Individual group members loaded:', membersData.length);
+        console.log("✅ Individual group members loaded:", membersData.length);
       } else {
-        console.error('❌ Failed to fetch individual group members:', membersResponse.status);
+        console.error(
+          "❌ Failed to fetch individual group members:",
+          membersResponse.status,
+        );
         setIndividualGroupMembers([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching individual group members:', error);
+      console.error("❌ Error fetching individual group members:", error);
       setIndividualGroupMembers([]);
     }
   };
@@ -549,36 +618,41 @@ export default function Hotels() {
   // Fetch group members when a group is selected
   const handleGroupSelection = async (groupId: string) => {
     try {
-      console.log('🔄 Fetching group data for ID:', groupId);
+      console.log("🔄 Fetching group data for ID:", groupId);
 
       const response = await safeFetch(`/api/groups/${groupId}`);
       if (response.ok) {
         const groupData = await response.json();
         setSelectedGroup(groupData);
-        console.log('✅ Group data loaded:', groupData.group_name);
+        console.log("✅ Group data loaded:", groupData.group_name);
 
         // Get group members
         try {
-          const membersResponse = await safeFetch(`/api/groups/${groupId}/members`);
+          const membersResponse = await safeFetch(
+            `/api/groups/${groupId}/members`,
+          );
           if (membersResponse.ok) {
             const membersData = await membersResponse.json();
             setGroupMembers(membersData);
-            console.log('✅ Group members loaded:', membersData.length);
+            console.log("✅ Group members loaded:", membersData.length);
           } else {
-            console.error('❌ Failed to fetch group members:', membersResponse.status);
+            console.error(
+              "❌ Failed to fetch group members:",
+              membersResponse.status,
+            );
             setGroupMembers([]);
           }
         } catch (memberError) {
-          console.error('❌ Error fetching group members:', memberError);
+          console.error("❌ Error fetching group members:", memberError);
           setGroupMembers([]);
         }
       } else {
-        console.error('❌ Failed to fetch group data:', response.status);
+        console.error("❌ Failed to fetch group data:", response.status);
         setSelectedGroup(null);
         setGroupMembers([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching group data:', error);
+      console.error("❌ Error fetching group data:", error);
       setSelectedGroup(null);
       setGroupMembers([]);
     }
@@ -587,7 +661,7 @@ export default function Hotels() {
   // Handle creating multiple bookings for group arrangements
   const handleCreateGroupBookings = async () => {
     if (bookingArrangements.length === 0) {
-      console.error('No booking arrangements created');
+      console.error("No booking arrangements created");
       return;
     }
 
@@ -597,11 +671,17 @@ export default function Hotels() {
 
       for (let i = 0; i < bookingArrangements.length; i++) {
         const arrangement = bookingArrangements[i];
-        console.log(`🏨 Creating booking ${i + 1}/${bookingArrangements.length} for:`, arrangement.guest_names);
+        console.log(
+          `🏨 Creating booking ${i + 1}/${bookingArrangements.length} for:`,
+          arrangement.guest_names,
+        );
 
         const bookingData = {
           guest_name: arrangement.guest_names,
-          guest_id: arrangement.member_ids && arrangement.member_ids.length > 0 ? arrangement.member_ids[0] : null,
+          guest_id:
+            arrangement.member_ids && arrangement.member_ids.length > 0
+              ? arrangement.member_ids[0]
+              : null,
           group_name: selectedGroup?.group_name || null,
           hotel_id: parseInt(arrangement.hotel_id),
           room_number: arrangement.room_number,
@@ -610,44 +690,66 @@ export default function Hotels() {
           check_out_date: arrangement.check_out_date,
           guests_count: arrangement.guests_count,
           rate_per_night: arrangement.rate_per_night,
-          total_amount: arrangement.rate_per_night * arrangement.guests_count * calculateNights(arrangement.check_in_date, arrangement.check_out_date),
+          total_amount:
+            arrangement.rate_per_night *
+            arrangement.guests_count *
+            calculateNights(
+              arrangement.check_in_date,
+              arrangement.check_out_date,
+            ),
           special_requests: arrangement.special_requests,
-          booking_reference: `HB-${Date.now()}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`
+          booking_reference: `HB-${Date.now()}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`,
         };
 
-        console.log(`📋 Booking data for ${arrangement.guest_names}:`, bookingData);
+        console.log(
+          `📋 Booking data for ${arrangement.guest_names}:`,
+          bookingData,
+        );
 
         try {
-          const response = await safeFetch('/api/hotel-bookings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(bookingData)
+          const response = await safeFetch("/api/hotel-bookings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(bookingData),
           });
 
           if (response.ok) {
             const result = await response.json();
-            console.log(`✅ Booking created successfully for ${arrangement.guest_names}:`, result);
+            console.log(
+              `✅ Booking created successfully for ${arrangement.guest_names}:`,
+              result,
+            );
             successCount++;
           } else {
             const errorText = await response.text();
-            console.error(`❌ Failed to create booking for ${arrangement.guest_names}. Status: ${response.status}, Error:`, errorText);
+            console.error(
+              `❌ Failed to create booking for ${arrangement.guest_names}. Status: ${response.status}, Error:`,
+              errorText,
+            );
             failureCount++;
           }
         } catch (bookingError) {
-          console.error(`❌ Error creating booking for ${arrangement.guest_names}:`, bookingError);
+          console.error(
+            `❌ Error creating booking for ${arrangement.guest_names}:`,
+            bookingError,
+          );
           failureCount++;
         }
       }
 
-      console.log(`📊 Group booking summary: ${successCount} successful, ${failureCount} failed`);
+      console.log(
+        `📊 Group booking summary: ${successCount} successful, ${failureCount} failed`,
+      );
 
       // Show user feedback
       if (successCount > 0 && failureCount === 0) {
-        console.log('🎉 All bookings created successfully!');
+        console.log("🎉 All bookings created successfully!");
       } else if (successCount > 0 && failureCount > 0) {
-        console.warn(`⚠️ Partial success: ${successCount} bookings created, ${failureCount} failed`);
+        console.warn(
+          `⚠️ Partial success: ${successCount} bookings created, ${failureCount} failed`,
+        );
       } else {
-        console.error('❌ All bookings failed to create');
+        console.error("❌ All bookings failed to create");
       }
 
       // Refresh data and close dialog only if at least one booking was successful
@@ -657,7 +759,7 @@ export default function Hotels() {
         resetBookingForm();
       }
     } catch (error) {
-      console.error('❌ Error in group booking process:', error);
+      console.error("❌ Error in group booking process:", error);
     }
   };
 
@@ -672,12 +774,12 @@ export default function Hotels() {
   // Add a booking arrangement for group bookings
   const addBookingArrangement = () => {
     const selectedMemberNames = bookingForm.selected_members
-      .map(memberId => {
-        const member = groupMembers.find(m => m.id === memberId);
-        return member ? `${member.first_name} ${member.last_name}` : '';
+      .map((memberId) => {
+        const member = groupMembers.find((m) => m.id === memberId);
+        return member ? `${member.first_name} ${member.last_name}` : "";
       })
-      .filter(name => name)
-      .join(', ');
+      .filter((name) => name)
+      .join(", ");
 
     const newArrangement = {
       id: Date.now(),
@@ -690,7 +792,7 @@ export default function Hotels() {
       check_out_date: bookingForm.check_out_date,
       guests_count: bookingForm.selected_members.length,
       rate_per_night: bookingForm.rate_per_night,
-      special_requests: bookingForm.special_requests
+      special_requests: bookingForm.special_requests,
     };
 
     setBookingArrangements([...bookingArrangements, newArrangement]);
@@ -699,14 +801,16 @@ export default function Hotels() {
     setBookingForm({
       ...bookingForm,
       selected_members: [],
-      room_number: '',
-      special_requests: ''
+      room_number: "",
+      special_requests: "",
     });
   };
 
   // Remove a booking arrangement
   const removeBookingArrangement = (arrangementId: number) => {
-    setBookingArrangements(bookingArrangements.filter(arr => arr.id !== arrangementId));
+    setBookingArrangements(
+      bookingArrangements.filter((arr) => arr.id !== arrangementId),
+    );
   };
 
   // Handle detail views
@@ -730,8 +834,11 @@ export default function Hotels() {
   const handlePrintBooking = (booking: HotelBooking | null) => {
     if (!booking) return;
 
-    const hotel = hotels.find(h => h.id === booking.hotel_id);
-    const nights = calculateNights(booking.check_in_date, booking.check_out_date);
+    const hotel = hotels.find((h) => h.id === booking.hotel_id);
+    const nights = calculateNights(
+      booking.check_in_date,
+      booking.check_out_date,
+    );
     const now = new Date();
 
     const occupants = (() => {
@@ -742,7 +849,8 @@ export default function Hotels() {
       return names;
     })();
 
-    const statusTitle = (s: string) => (s || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const statusTitle = (s: string) =>
+      (s || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
     const html = `
 <!doctype html>
@@ -782,14 +890,14 @@ export default function Hotels() {
       <div class="title">Hotel Booking</div>
       <div class="meta">Ref: ${booking.booking_reference} • Printed: ${now.toLocaleString()}</div>
     </div>
-    <div class="pill status-${(booking.status||'confirmed').toLowerCase()}">${statusTitle(booking.status)}</div>
+    <div class="pill status-${(booking.status || "confirmed").toLowerCase()}">${statusTitle(booking.status)}</div>
   </div>
 
   <div class="block">
     <div class="grid">
       <div class="row"><div class="label">Guest</div><div>${booking.guest_name}</div></div>
-      <div class="row"><div class="label">Group</div><div>${booking.group_name || '—'}</div></div>
-      <div class="row"><div class="label">Hotel</div><div>${hotel?.name || 'Unknown Hotel'}</div></div>
+      <div class="row"><div class="label">Group</div><div>${booking.group_name || "—"}</div></div>
+      <div class="row"><div class="label">Hotel</div><div>${hotel?.name || "Unknown Hotel"}</div></div>
       <div class="row"><div class="label">Room</div><div>${booking.room_type} • ${booking.room_number}</div></div>
       <div class="row"><div class="label">Check-in</div><div>${new Date(booking.check_in_date).toLocaleDateString()}</div></div>
       <div class="row"><div class="label">Check-out</div><div>${new Date(booking.check_out_date).toLocaleDateString()}</div></div>
@@ -798,7 +906,7 @@ export default function Hotels() {
       <div class="row"><div class="label">Rate / Night</div><div>$${booking.rate_per_night}</div></div>
       <div class="row"><div class="label">Total</div><div><strong>$${booking.total_amount}</strong></div></div>
     </div>
-    ${booking.special_requests ? `<div class="section"><div class="label" style="display:block;margin-bottom:4px;">Special Requests</div><div style="font-size:12px;">${booking.special_requests}</div></div>` : ''}
+    ${booking.special_requests ? `<div class="section"><div class="label" style="display:block;margin-bottom:4px;">Special Requests</div><div style="font-size:12px;">${booking.special_requests}</div></div>` : ""}
   </div>
 
   <div class="block">
@@ -812,13 +920,17 @@ export default function Hotels() {
         </tr>
       </thead>
       <tbody>
-        ${occupants.map((name, idx) => `
+        ${occupants
+          .map(
+            (name, idx) => `
           <tr>
             <td>${name}</td>
             <td><div class="sig"></div></td>
             <td></td>
           </tr>
-        `).join('')}
+        `,
+          )
+          .join("")}
       </tbody>
     </table>
   </div>
@@ -833,7 +945,7 @@ export default function Hotels() {
 </body>
 </html>`;
 
-    const w = window.open('', '_blank');
+    const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(html);
     w.document.close();
@@ -847,9 +959,12 @@ export default function Hotels() {
     setBookingForm({
       ...bookingForm,
       guests_count: newCount,
-      individual_selected_guests: newCount === 1 && bookingForm.selected_guest_id
-        ? [parseInt(bookingForm.selected_guest_id)]
-        : newCount > 1 ? [] : []
+      individual_selected_guests:
+        newCount === 1 && bookingForm.selected_guest_id
+          ? [parseInt(bookingForm.selected_guest_id)]
+          : newCount > 1
+            ? []
+            : [],
     });
   };
 
@@ -860,10 +975,10 @@ export default function Hotels() {
 
     if (isSelected) {
       // Remove guest
-      const newSelection = currentlySelected.filter(id => id !== guestId);
+      const newSelection = currentlySelected.filter((id) => id !== guestId);
       setBookingForm({
         ...bookingForm,
-        individual_selected_guests: newSelection
+        individual_selected_guests: newSelection,
       });
     } else {
       // Add guest if under limit
@@ -871,7 +986,7 @@ export default function Hotels() {
         const newSelection = [...currentlySelected, guestId];
         setBookingForm({
           ...bookingForm,
-          individual_selected_guests: newSelection
+          individual_selected_guests: newSelection,
         });
       }
     }
@@ -880,21 +995,31 @@ export default function Hotels() {
   // Helper functions
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'default';
-      case 'checked_in': return 'secondary';
-      case 'checked_out': return 'outline';
-      case 'cancelled': return 'destructive';
-      default: return 'outline';
+      case "confirmed":
+        return "default";
+      case "checked_in":
+        return "secondary";
+      case "checked_out":
+        return "outline";
+      case "cancelled":
+        return "destructive";
+      default:
+        return "outline";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'confirmed': return CheckCircle;
-      case 'checked_in': return Clock;
-      case 'checked_out': return CheckCircle;
-      case 'cancelled': return XCircle;
-      default: return AlertTriangle;
+      case "confirmed":
+        return CheckCircle;
+      case "checked_in":
+        return Clock;
+      case "checked_out":
+        return CheckCircle;
+      case "cancelled":
+        return XCircle;
+      default:
+        return AlertTriangle;
     }
   };
 
@@ -910,29 +1035,33 @@ export default function Hotels() {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`h-4 w-4 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+        className={`h-4 w-4 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
       />
     ));
   };
 
   // Filtering
-  const filteredBookings = bookings.filter(booking => {
-    const matchesSearch = (
+  const filteredBookings = bookings.filter((booking) => {
+    const matchesSearch =
       booking.guest_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.booking_reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (booking.group_name ? booking.group_name.toLowerCase().includes(searchTerm.toLowerCase()) : false)
-    );
+      booking.booking_reference
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (booking.group_name
+        ? booking.group_name.toLowerCase().includes(searchTerm.toLowerCase())
+        : false);
 
-    const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
+    const matchesStatus =
+      statusFilter === "all" || booking.status === statusFilter;
 
     const matchesGroupId = (() => {
       if (!groupIdQuery) return true;
       const gid = parseInt(groupIdQuery, 10);
       if (!gid) return false;
-      const grp = groups.find((g:any) => g.id === gid);
+      const grp = groups.find((g: any) => g.id === gid);
       if (!grp) return false;
-      const gname = (grp.group_name || '').toLowerCase();
-      return (booking.group_name || '').toLowerCase() === gname;
+      const gname = (grp.group_name || "").toLowerCase();
+      return (booking.group_name || "").toLowerCase() === gname;
     })();
 
     const matchesDate = (() => {
@@ -941,11 +1070,13 @@ export default function Hotels() {
         try {
           const d = new Date(str);
           const y = d.getFullYear();
-          const m = String(d.getMonth()+1).padStart(2,'0');
-          const da = String(d.getDate()).padStart(2,'0');
-          if (!y || isNaN(y)) return '';
+          const m = String(d.getMonth() + 1).padStart(2, "0");
+          const da = String(d.getDate()).padStart(2, "0");
+          if (!y || isNaN(y)) return "";
           return `${y}-${m}-${da}`;
-        } catch { return ''; }
+        } catch {
+          return "";
+        }
       };
       const sel = selectedDate;
       const inY = toYMD(booking.check_in_date);
@@ -977,15 +1108,24 @@ export default function Hotels() {
           <div className="text-center">
             <div className="w-16 h-16 mx-auto mb-4 text-red-500">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Connection Error</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Connection Error
+            </h3>
             <p className="text-muted-foreground mb-4">{connectionError}</p>
-            <Button onClick={() => {
-              setConnectionError(null);
-              fetchData();
-            }}>
+            <Button
+              onClick={() => {
+                setConnectionError(null);
+                fetchData();
+              }}
+            >
               Try Again
             </Button>
           </div>
@@ -995,17 +1135,24 @@ export default function Hotels() {
   }
 
   return (
-    <div className={`container mx-auto px-4 py-8 space-y-8 ${!isInitialized ? 'min-h-[600px]' : ''}`}>
+    <div
+      className={`container mx-auto px-4 py-8 space-y-8 ${!isInitialized ? "min-h-[600px]" : ""}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Hotel Management</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            Hotel Management
+          </h1>
           <p className="text-muted-foreground">
             Manage hotels and room bookings
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" onClick={() => setIsCreateBookingOpen(true)}>
+          <Button
+            variant="outline"
+            onClick={() => setIsCreateBookingOpen(true)}
+          >
             <Plus className="mr-2 h-4 w-4" />
             New Booking
           </Button>
@@ -1034,7 +1181,9 @@ export default function Hotels() {
             <div className="flex items-center space-x-2">
               <Bed className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="text-2xl font-bold">{hotels.reduce((sum, h) => sum + h.total_rooms, 0)}</p>
+                <p className="text-2xl font-bold">
+                  {hotels.reduce((sum, h) => sum + h.total_rooms, 0)}
+                </p>
                 <p className="text-sm text-muted-foreground">Total Rooms</p>
               </div>
             </div>
@@ -1045,7 +1194,9 @@ export default function Hotels() {
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-2xl font-bold">{stats.checked_in_bookings}</p>
+                <p className="text-2xl font-bold">
+                  {stats.checked_in_bookings}
+                </p>
                 <p className="text-sm text-muted-foreground">Checked In</p>
               </div>
             </div>
@@ -1067,7 +1218,9 @@ export default function Hotels() {
             <div className="flex items-center space-x-2">
               <DollarSign className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-2xl font-bold">${stats.total_revenue?.toFixed(0) || 0}</p>
+                <p className="text-2xl font-bold">
+                  ${stats.total_revenue?.toFixed(0) || 0}
+                </p>
                 <p className="text-sm text-muted-foreground">Revenue</p>
               </div>
             </div>
@@ -1109,7 +1262,9 @@ export default function Hotels() {
                     placeholder="Group ID"
                     inputMode="numeric"
                     value={groupIdQuery}
-                    onChange={(e) => setGroupIdQuery(e.target.value.replace(/[^0-9]/g, ""))}
+                    onChange={(e) =>
+                      setGroupIdQuery(e.target.value.replace(/[^0-9]/g, ""))
+                    }
                     className="w-[130px]"
                   />
                   <Filter className="h-4 w-4 text-muted-foreground" />
@@ -1134,10 +1289,13 @@ export default function Hotels() {
           <div className="grid gap-4">
             {filteredBookings.map((booking) => {
               const StatusIcon = getStatusIcon(booking.status);
-              const hotel = hotels.find(h => h.id === booking.hotel_id);
-              
+              const hotel = hotels.find((h) => h.id === booking.hotel_id);
+
               return (
-                <Card key={booking.id} className="hover:shadow-lg transition-shadow">
+                <Card
+                  key={booking.id}
+                  className="hover:shadow-lg transition-shadow"
+                >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4 flex-1">
@@ -1146,16 +1304,27 @@ export default function Hotels() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2 mb-1">
-                            <h3 className="text-lg font-semibold text-foreground">{booking.guest_name}</h3>
-                            <Badge variant="outline">{booking.booking_reference}</Badge>
-                            <Badge variant={getStatusColor(booking.status)}>{booking.status}</Badge>
+                            <h3 className="text-lg font-semibold text-foreground">
+                              {booking.guest_name}
+                            </h3>
+                            <Badge variant="outline">
+                              {booking.booking_reference}
+                            </Badge>
+                            <Badge variant={getStatusColor(booking.status)}>
+                              {booking.status}
+                            </Badge>
                             {booking.group_name && (
-                              <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                              <Badge
+                                variant="secondary"
+                                className="bg-blue-100 text-blue-700"
+                              >
                                 {booking.group_name}
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">{hotel?.name || 'Unknown Hotel'}</p>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {hotel?.name || "Unknown Hotel"}
+                          </p>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
                             <div className="flex items-center">
                               <Bed className="mr-1 h-4 w-4" />
@@ -1163,11 +1332,13 @@ export default function Hotels() {
                             </div>
                             <div className="flex items-center">
                               <Users className="mr-1 h-4 w-4" />
-                              {booking.guests_count} guest{booking.guests_count > 1 ? 's' : ''}
+                              {booking.guests_count} guest
+                              {booking.guests_count > 1 ? "s" : ""}
                             </div>
                             <div className="flex items-center">
                               <Calendar className="mr-1 h-4 w-4" />
-                              {formatDate(booking.check_in_date)} - {formatDate(booking.check_out_date)}
+                              {formatDate(booking.check_in_date)} -{" "}
+                              {formatDate(booking.check_out_date)}
                             </div>
                             <div className="text-lg font-semibold text-foreground">
                               ${booking.total_amount}
@@ -1188,35 +1359,55 @@ export default function Hotels() {
                             <Edit3 className="mr-1 h-4 w-4" />
                             View Details
                           </Button>
-                          {booking.status === 'confirmed' && (
+                          {booking.status === "confirmed" && (
                             <Button
                               size="sm"
-                              onClick={() => handleUpdateBookingStatus(booking.id, 'checked_in')}
+                              onClick={() =>
+                                handleUpdateBookingStatus(
+                                  booking.id,
+                                  "checked_in",
+                                )
+                              }
                             >
                               Check In
                             </Button>
                           )}
-                          {booking.status === 'checked_in' && (
+                          {booking.status === "checked_in" && (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleUpdateBookingStatus(booking.id, 'checked_out')}
+                              onClick={() =>
+                                handleUpdateBookingStatus(
+                                  booking.id,
+                                  "checked_out",
+                                )
+                              }
                             >
                               Check Out
                             </Button>
                           )}
                           <Select
                             value={booking.status}
-                            onValueChange={(status) => handleUpdateBookingStatus(booking.id, status)}
+                            onValueChange={(status) =>
+                              handleUpdateBookingStatus(booking.id, status)
+                            }
                           >
                             <SelectTrigger className="w-[120px]">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="confirmed">Confirmed</SelectItem>
-                              <SelectItem value="checked_in">Checked In</SelectItem>
-                              <SelectItem value="checked_out">Checked Out</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                              <SelectItem value="confirmed">
+                                Confirmed
+                              </SelectItem>
+                              <SelectItem value="checked_in">
+                                Checked In
+                              </SelectItem>
+                              <SelectItem value="checked_out">
+                                Checked Out
+                              </SelectItem>
+                              <SelectItem value="cancelled">
+                                Cancelled
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                           <DeleteHotelBookingDialog
@@ -1236,8 +1427,12 @@ export default function Hotels() {
             <Card>
               <CardContent className="p-8 text-center">
                 <Hotel className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No bookings found</h3>
-                <p className="text-muted-foreground">Create your first hotel booking to get started</p>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  No bookings found
+                </h3>
+                <p className="text-muted-foreground">
+                  Create your first hotel booking to get started
+                </p>
               </CardContent>
             </Card>
           )}
@@ -1247,7 +1442,10 @@ export default function Hotels() {
         <TabsContent value="hotels" className="space-y-4">
           <div className="grid gap-4">
             {hotels.map((hotel) => (
-              <Card key={hotel.id} className="hover:shadow-lg transition-shadow">
+              <Card
+                key={hotel.id}
+                className="hover:shadow-lg transition-shadow"
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4 flex-1">
@@ -1256,8 +1454,12 @@ export default function Hotels() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="text-lg font-semibold text-foreground">{hotel.name}</h3>
-                          <div className="flex">{renderStars(hotel.star_rating)}</div>
+                          <h3 className="text-lg font-semibold text-foreground">
+                            {hotel.name}
+                          </h3>
+                          <div className="flex">
+                            {renderStars(hotel.star_rating)}
+                          </div>
                           {hotel.is_partner && (
                             <Badge variant="default">Partner</Badge>
                           )}
@@ -1325,8 +1527,12 @@ export default function Hotels() {
             <Card>
               <CardContent className="p-8 text-center">
                 <Hotel className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No hotels registered</h3>
-                <p className="text-muted-foreground">Add your first hotel to get started</p>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  No hotels registered
+                </h3>
+                <p className="text-muted-foreground">
+                  Add your first hotel to get started
+                </p>
               </CardContent>
             </Card>
           )}
@@ -1338,9 +1544,7 @@ export default function Hotels() {
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Hotel</DialogTitle>
-            <DialogDescription>
-              Register a new hotel partner
-            </DialogDescription>
+            <DialogDescription>Register a new hotel partner</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
@@ -1349,15 +1553,19 @@ export default function Hotels() {
                 <Input
                   id="name"
                   value={hotelForm.name}
-                  onChange={(e) => setHotelForm({...hotelForm, name: e.target.value})}
+                  onChange={(e) =>
+                    setHotelForm({ ...hotelForm, name: e.target.value })
+                  }
                   placeholder="Hotel Reykjavik Grand"
                 />
               </div>
               <div>
                 <Label htmlFor="star_rating">Star Rating</Label>
-                <Select 
-                  value={hotelForm.star_rating.toString()} 
-                  onValueChange={(value) => setHotelForm({...hotelForm, star_rating: parseInt(value)})}
+                <Select
+                  value={hotelForm.star_rating.toString()}
+                  onValueChange={(value) =>
+                    setHotelForm({ ...hotelForm, star_rating: parseInt(value) })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -1377,7 +1585,9 @@ export default function Hotels() {
               <Input
                 id="address"
                 value={hotelForm.address}
-                onChange={(e) => setHotelForm({...hotelForm, address: e.target.value})}
+                onChange={(e) =>
+                  setHotelForm({ ...hotelForm, address: e.target.value })
+                }
                 placeholder="Sigtun 38, 105 Reykjavik"
               />
             </div>
@@ -1387,7 +1597,9 @@ export default function Hotels() {
                 <Input
                   id="phone"
                   value={hotelForm.phone}
-                  onChange={(e) => setHotelForm({...hotelForm, phone: e.target.value})}
+                  onChange={(e) =>
+                    setHotelForm({ ...hotelForm, phone: e.target.value })
+                  }
                   placeholder="+354-514-8000"
                 />
               </div>
@@ -1397,7 +1609,12 @@ export default function Hotels() {
                   id="total_rooms"
                   type="number"
                   value={hotelForm.total_rooms}
-                  onChange={(e) => setHotelForm({...hotelForm, total_rooms: parseInt(e.target.value) || 0})}
+                  onChange={(e) =>
+                    setHotelForm({
+                      ...hotelForm,
+                      total_rooms: parseInt(e.target.value) || 0,
+                    })
+                  }
                   placeholder="100"
                 />
               </div>
@@ -1407,18 +1624,21 @@ export default function Hotels() {
                 type="checkbox"
                 id="is_partner"
                 checked={hotelForm.is_partner}
-                onChange={(e) => setHotelForm({...hotelForm, is_partner: e.target.checked})}
+                onChange={(e) =>
+                  setHotelForm({ ...hotelForm, is_partner: e.target.checked })
+                }
               />
               <Label htmlFor="is_partner">Partner Hotel</Label>
             </div>
           </div>
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setIsCreateHotelOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateHotelOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleCreateHotel}>
-              Create Hotel
-            </Button>
+            <Button onClick={handleCreateHotel}>Create Hotel</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1440,7 +1660,7 @@ export default function Hotels() {
                 value={bookingForm.booking_type}
                 onValueChange={(value) => {
                   resetBookingForm();
-                  setBookingForm(prev => ({...prev, booking_type: value}));
+                  setBookingForm((prev) => ({ ...prev, booking_type: value }));
                 }}
               >
                 <SelectTrigger>
@@ -1454,7 +1674,7 @@ export default function Hotels() {
             </div>
 
             {/* Individual Guest Section */}
-            {bookingForm.booking_type === 'individual' && (
+            {bookingForm.booking_type === "individual" && (
               <div className="grid gap-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -1470,7 +1690,10 @@ export default function Hotels() {
                       </SelectTrigger>
                       <SelectContent>
                         {guests.map((guest) => (
-                          <SelectItem key={guest.id} value={guest.id.toString()}>
+                          <SelectItem
+                            key={guest.id}
+                            value={guest.id.toString()}
+                          >
                             {guest.first_name} {guest.last_name} ({guest.email})
                           </SelectItem>
                         ))}
@@ -1478,22 +1701,32 @@ export default function Hotels() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="guest_name">Or Enter Guest Name{bookingForm.guests_count > 1 ? 's' : ''}</Label>
+                    <Label htmlFor="guest_name">
+                      Or Enter Guest Name
+                      {bookingForm.guests_count > 1 ? "s" : ""}
+                    </Label>
                     <Input
                       id="guest_name"
                       value={bookingForm.guest_name}
-                      onChange={(e) => setBookingForm({
-                        ...bookingForm,
-                        guest_name: e.target.value,
-                        selected_guest_id: '',
-                        guest_group_name: '',
-                        individual_selected_guests: []
-                      })}
-                      placeholder={bookingForm.guests_count > 1 ? "John Smith, Jane Smith, ..." : "John Smith"}
+                      onChange={(e) =>
+                        setBookingForm({
+                          ...bookingForm,
+                          guest_name: e.target.value,
+                          selected_guest_id: "",
+                          guest_group_name: "",
+                          individual_selected_guests: [],
+                        })
+                      }
+                      placeholder={
+                        bookingForm.guests_count > 1
+                          ? "John Smith, Jane Smith, ..."
+                          : "John Smith"
+                      }
                     />
                     {bookingForm.guests_count > 1 && (
                       <p className="text-sm text-muted-foreground mt-1">
-                        Enter names separated by commas for {bookingForm.guests_count} guests
+                        Enter names separated by commas for{" "}
+                        {bookingForm.guests_count} guests
                       </p>
                     )}
                   </div>
@@ -1506,76 +1739,112 @@ export default function Hotels() {
                     <Input
                       id="guest_group_name"
                       value={bookingForm.guest_group_name}
-                      onChange={(e) => setBookingForm({...bookingForm, guest_group_name: e.target.value})}
+                      onChange={(e) =>
+                        setBookingForm({
+                          ...bookingForm,
+                          guest_group_name: e.target.value,
+                        })
+                      }
                       placeholder="Group name"
                       className="bg-blue-50 border-blue-200"
                     />
                     <p className="text-sm text-blue-600 mt-1">
-                      This guest is part of the "{bookingForm.guest_group_name}" group
+                      This guest is part of the "{bookingForm.guest_group_name}"
+                      group
                     </p>
                   </div>
                 )}
 
                 {/* Multi-guest selection for individual bookings */}
-                {bookingForm.booking_type === 'individual' &&
-                 bookingForm.guests_count > 1 &&
-                 individualGroupMembers.length > 0 && (
-                  <div>
-                    <Label>Select {bookingForm.guests_count} Guests from {bookingForm.guest_group_name}</Label>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Select exactly {bookingForm.guests_count} guest{bookingForm.guests_count > 1 ? 's' : ''} from the same group for this room
-                    </p>
-                    <div className="border rounded-lg p-4 max-h-48 overflow-y-auto">
-                      <div className="grid gap-2">
-                        {individualGroupMembers.map((member) => (
-                          <div key={member.id} className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`individual-guest-${member.id}`}
-                              checked={bookingForm.individual_selected_guests.includes(member.id)}
-                              onChange={() => handleIndividualGuestToggle(member.id)}
-                              disabled={
-                                !bookingForm.individual_selected_guests.includes(member.id) &&
-                                bookingForm.individual_selected_guests.length >= bookingForm.guests_count
-                              }
-                            />
-                            <Label htmlFor={`individual-guest-${member.id}`} className="cursor-pointer">
-                              {member.first_name} {member.last_name}
-                              {member.is_leader && <Badge variant="outline" className="ml-2">Leader</Badge>}
-                            </Label>
-                          </div>
-                        ))}
+                {bookingForm.booking_type === "individual" &&
+                  bookingForm.guests_count > 1 &&
+                  individualGroupMembers.length > 0 && (
+                    <div>
+                      <Label>
+                        Select {bookingForm.guests_count} Guests from{" "}
+                        {bookingForm.guest_group_name}
+                      </Label>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Select exactly {bookingForm.guests_count} guest
+                        {bookingForm.guests_count > 1 ? "s" : ""} from the same
+                        group for this room
+                      </p>
+                      <div className="border rounded-lg p-4 max-h-48 overflow-y-auto">
+                        <div className="grid gap-2">
+                          {individualGroupMembers.map((member) => (
+                            <div
+                              key={member.id}
+                              className="flex items-center space-x-2"
+                            >
+                              <input
+                                type="checkbox"
+                                id={`individual-guest-${member.id}`}
+                                checked={bookingForm.individual_selected_guests.includes(
+                                  member.id,
+                                )}
+                                onChange={() =>
+                                  handleIndividualGuestToggle(member.id)
+                                }
+                                disabled={
+                                  !bookingForm.individual_selected_guests.includes(
+                                    member.id,
+                                  ) &&
+                                  bookingForm.individual_selected_guests
+                                    .length >= bookingForm.guests_count
+                                }
+                              />
+                              <Label
+                                htmlFor={`individual-guest-${member.id}`}
+                                className="cursor-pointer"
+                              >
+                                {member.first_name} {member.last_name}
+                                {member.is_leader && (
+                                  <Badge variant="outline" className="ml-2">
+                                    Leader
+                                  </Badge>
+                                )}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">
+                          Selected:{" "}
+                          {bookingForm.individual_selected_guests.length} /{" "}
+                          {bookingForm.guests_count}
+                        </p>
+                        {bookingForm.individual_selected_guests.length !==
+                          bookingForm.guests_count && (
+                          <p className="text-sm text-amber-600">
+                            ⚠️ Please select exactly {bookingForm.guests_count}{" "}
+                            guest{bookingForm.guests_count > 1 ? "s" : ""}
+                          </p>
+                        )}
+                        {bookingForm.individual_selected_guests.length ===
+                          bookingForm.guests_count && (
+                          <p className="text-sm text-green-600">
+                            ✅ All guests selected
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground">
-                        Selected: {bookingForm.individual_selected_guests.length} / {bookingForm.guests_count}
-                      </p>
-                      {bookingForm.individual_selected_guests.length !== bookingForm.guests_count && (
-                        <p className="text-sm text-amber-600">
-                          ⚠️ Please select exactly {bookingForm.guests_count} guest{bookingForm.guests_count > 1 ? 's' : ''}
-                        </p>
-                      )}
-                      {bookingForm.individual_selected_guests.length === bookingForm.guests_count && (
-                        <p className="text-sm text-green-600">
-                          ✅ All guests selected
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
+                  )}
               </div>
             )}
 
             {/* Group Selection Section */}
-            {bookingForm.booking_type === 'group' && (
+            {bookingForm.booking_type === "group" && (
               <div className="grid gap-4">
                 <div>
                   <Label htmlFor="group_selection">Select Group</Label>
                   <Select
                     value={bookingForm.selected_group_id}
                     onValueChange={(value) => {
-                      setBookingForm({...bookingForm, selected_group_id: value});
+                      setBookingForm({
+                        ...bookingForm,
+                        selected_group_id: value,
+                      });
                       handleGroupSelection(value);
                     }}
                   >
@@ -1583,11 +1852,16 @@ export default function Hotels() {
                       <SelectValue placeholder="Select a tour group" />
                     </SelectTrigger>
                     <SelectContent>
-                      {groups.filter(group => group.status === 'active').map((group) => (
-                        <SelectItem key={group.id} value={group.id.toString()}>
-                          {group.group_name} ({group.total_members} members)
-                        </SelectItem>
-                      ))}
+                      {groups
+                        .filter((group) => group.status === "active")
+                        .map((group) => (
+                          <SelectItem
+                            key={group.id}
+                            value={group.id.toString()}
+                          >
+                            {group.group_name} ({group.total_members} members)
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1599,30 +1873,52 @@ export default function Hotels() {
                     <div className="border rounded-lg p-4 max-h-48 overflow-y-auto">
                       <div className="grid gap-2">
                         {groupMembers.map((member) => (
-                          <div key={member.id} className="flex items-center space-x-2">
+                          <div
+                            key={member.id}
+                            className="flex items-center space-x-2"
+                          >
                             <input
                               type="checkbox"
                               id={`member-${member.id}`}
-                              checked={bookingForm.selected_members.includes(member.id)}
+                              checked={bookingForm.selected_members.includes(
+                                member.id,
+                              )}
                               onChange={(e) => {
                                 if (e.target.checked) {
                                   setBookingForm({
                                     ...bookingForm,
-                                    selected_members: [...bookingForm.selected_members, member.id],
-                                    guests_count: bookingForm.selected_members.length + 1
+                                    selected_members: [
+                                      ...bookingForm.selected_members,
+                                      member.id,
+                                    ],
+                                    guests_count:
+                                      bookingForm.selected_members.length + 1,
                                   });
                                 } else {
                                   setBookingForm({
                                     ...bookingForm,
-                                    selected_members: bookingForm.selected_members.filter(id => id !== member.id),
-                                    guests_count: Math.max(1, bookingForm.selected_members.length - 1)
+                                    selected_members:
+                                      bookingForm.selected_members.filter(
+                                        (id) => id !== member.id,
+                                      ),
+                                    guests_count: Math.max(
+                                      1,
+                                      bookingForm.selected_members.length - 1,
+                                    ),
                                   });
                                 }
                               }}
                             />
-                            <Label htmlFor={`member-${member.id}`} className="cursor-pointer">
+                            <Label
+                              htmlFor={`member-${member.id}`}
+                              className="cursor-pointer"
+                            >
                               {member.first_name} {member.last_name}
-                              {member.is_leader && <Badge variant="outline" className="ml-2">Leader</Badge>}
+                              {member.is_leader && (
+                                <Badge variant="outline" className="ml-2">
+                                  Leader
+                                </Badge>
+                              )}
                             </Label>
                           </div>
                         ))}
@@ -1640,19 +1936,31 @@ export default function Hotels() {
                     <Label>Booking Arrangements</Label>
                     <div className="border rounded-lg p-4 space-y-2">
                       {bookingArrangements.map((arrangement) => (
-                        <div key={arrangement.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                        <div
+                          key={arrangement.id}
+                          className="flex items-center justify-between p-2 bg-muted rounded"
+                        >
                           <div className="text-sm">
-                            <strong>{arrangement.guest_names}</strong> - {arrangement.room_type} Room {arrangement.room_number}
+                            <strong>{arrangement.guest_names}</strong> -{" "}
+                            {arrangement.room_type} Room{" "}
+                            {arrangement.room_number}
                             <br />
                             <span className="text-muted-foreground">
-                              {hotels.find(h => h.id.toString() === arrangement.hotel_id)?.name}
+                              {
+                                hotels.find(
+                                  (h) =>
+                                    h.id.toString() === arrangement.hotel_id,
+                                )?.name
+                              }
                               ({arrangement.guests_count} guests)
                             </span>
                           </div>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => removeBookingArrangement(arrangement.id)}
+                            onClick={() =>
+                              removeBookingArrangement(arrangement.id)
+                            }
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -1671,7 +1979,9 @@ export default function Hotels() {
                   <Label htmlFor="hotel_id">Hotel</Label>
                   <Select
                     value={bookingForm.hotel_id}
-                    onValueChange={(value) => setBookingForm({...bookingForm, hotel_id: value})}
+                    onValueChange={(value) =>
+                      setBookingForm({ ...bookingForm, hotel_id: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select hotel" />
@@ -1689,7 +1999,9 @@ export default function Hotels() {
                   <Label htmlFor="room_type">Room Type</Label>
                   <Select
                     value={bookingForm.room_type}
-                    onValueChange={(value) => setBookingForm({...bookingForm, room_type: value})}
+                    onValueChange={(value) =>
+                      setBookingForm({ ...bookingForm, room_type: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1711,7 +2023,12 @@ export default function Hotels() {
                   <Input
                     id="room_number"
                     value={bookingForm.room_number}
-                    onChange={(e) => setBookingForm({...bookingForm, room_number: e.target.value})}
+                    onChange={(e) =>
+                      setBookingForm({
+                        ...bookingForm,
+                        room_number: e.target.value,
+                      })
+                    }
                     placeholder="201"
                   />
                 </div>
@@ -1721,9 +2038,11 @@ export default function Hotels() {
                     id="guests_count"
                     type="number"
                     value={bookingForm.guests_count}
-                    onChange={(e) => handleGuestCountChange(parseInt(e.target.value) || 1)}
+                    onChange={(e) =>
+                      handleGuestCountChange(parseInt(e.target.value) || 1)
+                    }
                     min="1"
-                    disabled={bookingForm.booking_type === 'group'}
+                    disabled={bookingForm.booking_type === "group"}
                   />
                 </div>
                 <div>
@@ -1732,7 +2051,12 @@ export default function Hotels() {
                     id="rate_per_night"
                     type="number"
                     value={bookingForm.rate_per_night}
-                    onChange={(e) => setBookingForm({...bookingForm, rate_per_night: parseFloat(e.target.value) || 0})}
+                    onChange={(e) =>
+                      setBookingForm({
+                        ...bookingForm,
+                        rate_per_night: parseFloat(e.target.value) || 0,
+                      })
+                    }
                     placeholder="150"
                   />
                 </div>
@@ -1745,7 +2069,12 @@ export default function Hotels() {
                     id="check_in_date"
                     type="date"
                     value={bookingForm.check_in_date}
-                    onChange={(e) => setBookingForm({...bookingForm, check_in_date: e.target.value})}
+                    onChange={(e) =>
+                      setBookingForm({
+                        ...bookingForm,
+                        check_in_date: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div>
@@ -1754,7 +2083,12 @@ export default function Hotels() {
                     id="check_out_date"
                     type="date"
                     value={bookingForm.check_out_date}
-                    onChange={(e) => setBookingForm({...bookingForm, check_out_date: e.target.value})}
+                    onChange={(e) =>
+                      setBookingForm({
+                        ...bookingForm,
+                        check_out_date: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -1764,7 +2098,12 @@ export default function Hotels() {
                 <Textarea
                   id="special_requests"
                   value={bookingForm.special_requests}
-                  onChange={(e) => setBookingForm({...bookingForm, special_requests: e.target.value})}
+                  onChange={(e) =>
+                    setBookingForm({
+                      ...bookingForm,
+                      special_requests: e.target.value,
+                    })
+                  }
                   placeholder="Late check-in, extra towels, connecting rooms, etc."
                 />
               </div>
@@ -1773,38 +2112,54 @@ export default function Hotels() {
 
           <div className="flex justify-between">
             <div>
-              {bookingForm.booking_type === 'group' && bookingForm.selected_members.length > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={addBookingArrangement}
-                  disabled={!bookingForm.hotel_id || !bookingForm.room_number || !bookingForm.check_in_date || !bookingForm.check_out_date}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add This Room Arrangement
-                </Button>
-              )}
+              {bookingForm.booking_type === "group" &&
+                bookingForm.selected_members.length > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={addBookingArrangement}
+                    disabled={
+                      !bookingForm.hotel_id ||
+                      !bookingForm.room_number ||
+                      !bookingForm.check_in_date ||
+                      !bookingForm.check_out_date
+                    }
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add This Room Arrangement
+                  </Button>
+                )}
             </div>
             <div className="flex space-x-2">
-              <Button variant="outline" onClick={() => {setIsCreateBookingOpen(false); resetBookingForm();}}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsCreateBookingOpen(false);
+                  resetBookingForm();
+                }}
+              >
                 Cancel
               </Button>
-              {bookingForm.booking_type === 'individual' ? (
+              {bookingForm.booking_type === "individual" ? (
                 <Button
                   onClick={handleCreateBooking}
                   disabled={
-                    (!bookingForm.guest_name && !bookingForm.selected_guest_id) ||
+                    (!bookingForm.guest_name &&
+                      !bookingForm.selected_guest_id) ||
                     !bookingForm.hotel_id ||
                     !bookingForm.check_in_date ||
                     !bookingForm.check_out_date ||
                     (bookingForm.guests_count > 1 &&
-                     individualGroupMembers.length > 0 &&
-                     bookingForm.individual_selected_guests.length !== bookingForm.guests_count)
+                      individualGroupMembers.length > 0 &&
+                      bookingForm.individual_selected_guests.length !==
+                        bookingForm.guests_count)
                   }
                 >
                   Create Booking
-                  {bookingForm.guests_count > 1 && individualGroupMembers.length > 0 &&
-                   bookingForm.individual_selected_guests.length !== bookingForm.guests_count &&
-                   ` (${bookingForm.individual_selected_guests.length}/${bookingForm.guests_count})`}
+                  {bookingForm.guests_count > 1 &&
+                    individualGroupMembers.length > 0 &&
+                    bookingForm.individual_selected_guests.length !==
+                      bookingForm.guests_count &&
+                    ` (${bookingForm.individual_selected_guests.length}/${bookingForm.guests_count})`}
                 </Button>
               ) : (
                 <Button
@@ -1825,7 +2180,8 @@ export default function Hotels() {
           <DialogHeader>
             <DialogTitle>Booking Details</DialogTitle>
             <DialogDescription>
-              Complete information for booking {selectedBooking?.booking_reference}
+              Complete information for booking{" "}
+              {selectedBooking?.booking_reference}
             </DialogDescription>
           </DialogHeader>
           {selectedBooking && (
@@ -1833,17 +2189,25 @@ export default function Hotels() {
               {/* Booking Status Header */}
               <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                 <div>
-                  <h3 className="text-lg font-semibold">{selectedBooking.guest_name}</h3>
+                  <h3 className="text-lg font-semibold">
+                    {selectedBooking.guest_name}
+                  </h3>
                   <p className="text-sm text-muted-foreground">
                     Booking Reference: {selectedBooking.booking_reference}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Badge variant={getStatusColor(selectedBooking.status)} className="text-sm">
+                  <Badge
+                    variant={getStatusColor(selectedBooking.status)}
+                    className="text-sm"
+                  >
                     {selectedBooking.status}
                   </Badge>
                   {selectedBooking.group_name && (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                    <Badge
+                      variant="secondary"
+                      className="bg-blue-100 text-blue-700"
+                    >
                       {selectedBooking.group_name}
                     </Badge>
                   )}
@@ -1865,12 +2229,16 @@ export default function Hotels() {
                     </div>
                   )}
                   <div>
-                    <Label className="text-sm font-medium">Number of Guests</Label>
+                    <Label className="text-sm font-medium">
+                      Number of Guests
+                    </Label>
                     <p className="text-sm">{selectedBooking.guests_count}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Status</Label>
-                    <p className="text-sm capitalize">{selectedBooking.status}</p>
+                    <p className="text-sm capitalize">
+                      {selectedBooking.status}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1882,7 +2250,8 @@ export default function Hotels() {
                   <div>
                     <Label className="text-sm font-medium">Hotel</Label>
                     <p className="text-sm">
-                      {hotels.find(h => h.id === selectedBooking.hotel_id)?.name || 'Unknown Hotel'}
+                      {hotels.find((h) => h.id === selectedBooking.hotel_id)
+                        ?.name || "Unknown Hotel"}
                     </p>
                   </div>
                   <div>
@@ -1894,7 +2263,9 @@ export default function Hotels() {
                     <p className="text-sm">{selectedBooking.room_type}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Rate per Night</Label>
+                    <Label className="text-sm font-medium">
+                      Rate per Night
+                    </Label>
                     <p className="text-sm">${selectedBooking.rate_per_night}</p>
                   </div>
                 </div>
@@ -1906,33 +2277,52 @@ export default function Hotels() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium">Check-in Date</Label>
-                    <p className="text-sm">{formatDate(selectedBooking.check_in_date)}</p>
+                    <p className="text-sm">
+                      {formatDate(selectedBooking.check_in_date)}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Check-out Date</Label>
-                    <p className="text-sm">{formatDate(selectedBooking.check_out_date)}</p>
+                    <Label className="text-sm font-medium">
+                      Check-out Date
+                    </Label>
+                    <p className="text-sm">
+                      {formatDate(selectedBooking.check_out_date)}
+                    </p>
                   </div>
                   {selectedBooking.actual_check_in && (
                     <div>
-                      <Label className="text-sm font-medium">Actual Check-in</Label>
-                      <p className="text-sm">{formatDateTime(selectedBooking.actual_check_in)}</p>
+                      <Label className="text-sm font-medium">
+                        Actual Check-in
+                      </Label>
+                      <p className="text-sm">
+                        {formatDateTime(selectedBooking.actual_check_in)}
+                      </p>
                     </div>
                   )}
                   {selectedBooking.actual_check_out && (
                     <div>
-                      <Label className="text-sm font-medium">Actual Check-out</Label>
-                      <p className="text-sm">{formatDateTime(selectedBooking.actual_check_out)}</p>
+                      <Label className="text-sm font-medium">
+                        Actual Check-out
+                      </Label>
+                      <p className="text-sm">
+                        {formatDateTime(selectedBooking.actual_check_out)}
+                      </p>
                     </div>
                   )}
                   <div>
                     <Label className="text-sm font-medium">Total Nights</Label>
                     <p className="text-sm">
-                      {calculateNights(selectedBooking.check_in_date, selectedBooking.check_out_date)}
+                      {calculateNights(
+                        selectedBooking.check_in_date,
+                        selectedBooking.check_out_date,
+                      )}
                     </p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Total Amount</Label>
-                    <p className="text-lg font-semibold text-green-600">${selectedBooking.total_amount}</p>
+                    <p className="text-lg font-semibold text-green-600">
+                      ${selectedBooking.total_amount}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1942,7 +2332,9 @@ export default function Hotels() {
                 <div className="grid gap-4">
                   <h4 className="text-md font-semibold">Special Requests</h4>
                   <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-sm">{selectedBooking.special_requests}</p>
+                    <p className="text-sm">
+                      {selectedBooking.special_requests}
+                    </p>
                   </div>
                 </div>
               )}
@@ -1951,10 +2343,13 @@ export default function Hotels() {
               <div className="grid gap-4">
                 <h4 className="text-md font-semibold">Quick Actions</h4>
                 <div className="flex items-center space-x-2">
-                  {selectedBooking.status === 'confirmed' && (
+                  {selectedBooking.status === "confirmed" && (
                     <Button
                       onClick={() => {
-                        handleUpdateBookingStatus(selectedBooking.id, 'checked_in');
+                        handleUpdateBookingStatus(
+                          selectedBooking.id,
+                          "checked_in",
+                        );
                         closeDetailViews();
                       }}
                     >
@@ -1962,11 +2357,14 @@ export default function Hotels() {
                       Check In
                     </Button>
                   )}
-                  {selectedBooking.status === 'checked_in' && (
+                  {selectedBooking.status === "checked_in" && (
                     <Button
                       variant="outline"
                       onClick={() => {
-                        handleUpdateBookingStatus(selectedBooking.id, 'checked_out');
+                        handleUpdateBookingStatus(
+                          selectedBooking.id,
+                          "checked_out",
+                        );
                         closeDetailViews();
                       }}
                     >
@@ -1977,7 +2375,10 @@ export default function Hotels() {
                   <Button
                     variant="destructive"
                     onClick={() => {
-                      handleUpdateBookingStatus(selectedBooking.id, 'cancelled');
+                      handleUpdateBookingStatus(
+                        selectedBooking.id,
+                        "cancelled",
+                      );
                       closeDetailViews();
                     }}
                   >
@@ -2015,9 +2416,13 @@ export default function Hotels() {
                 <div>
                   <h3 className="text-lg font-semibold flex items-center space-x-2">
                     <span>{selectedHotel.name}</span>
-                    <div className="flex">{renderStars(selectedHotel.star_rating)}</div>
+                    <div className="flex">
+                      {renderStars(selectedHotel.star_rating)}
+                    </div>
                   </h3>
-                  <p className="text-sm text-muted-foreground">{selectedHotel.address}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedHotel.address}
+                  </p>
                 </div>
                 <div className="flex items-center space-x-2">
                   {selectedHotel.is_partner && (
@@ -2048,7 +2453,9 @@ export default function Hotels() {
                   )}
                   {selectedHotel.contact_person && (
                     <div>
-                      <Label className="text-sm font-medium">Contact Person</Label>
+                      <Label className="text-sm font-medium">
+                        Contact Person
+                      </Label>
                       <p className="text-sm">{selectedHotel.contact_person}</p>
                     </div>
                   )}
@@ -2063,7 +2470,9 @@ export default function Hotels() {
                     <Label className="text-sm font-medium">Star Rating</Label>
                     <div className="flex items-center space-x-1">
                       {renderStars(selectedHotel.star_rating)}
-                      <span className="text-sm ml-2">({selectedHotel.star_rating} stars)</span>
+                      <span className="text-sm ml-2">
+                        ({selectedHotel.star_rating} stars)
+                      </span>
                     </div>
                   </div>
                   <div>
@@ -2075,21 +2484,29 @@ export default function Hotels() {
                     <p className="text-sm">{selectedHotel.check_in_time}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Check-out Time</Label>
+                    <Label className="text-sm font-medium">
+                      Check-out Time
+                    </Label>
                     <p className="text-sm">{selectedHotel.check_out_time}</p>
                   </div>
                   {selectedHotel.special_rates && (
                     <div>
-                      <Label className="text-sm font-medium">Special Rate</Label>
+                      <Label className="text-sm font-medium">
+                        Special Rate
+                      </Label>
                       <p className="text-sm text-green-600 font-semibold">
                         ${selectedHotel.special_rates}/night
                       </p>
                     </div>
                   )}
                   <div>
-                    <Label className="text-sm font-medium">Partnership Status</Label>
+                    <Label className="text-sm font-medium">
+                      Partnership Status
+                    </Label>
                     <p className="text-sm">
-                      {selectedHotel.is_partner ? 'Partner Hotel' : 'Standard Hotel'}
+                      {selectedHotel.is_partner
+                        ? "Partner Hotel"
+                        : "Standard Hotel"}
                     </p>
                   </div>
                 </div>
@@ -2111,21 +2528,42 @@ export default function Hotels() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-3 bg-blue-50 rounded-lg">
                     <p className="text-2xl font-bold text-blue-600">
-                      {bookings.filter(b => b.hotel_id === selectedHotel.id).length}
+                      {
+                        bookings.filter((b) => b.hotel_id === selectedHotel.id)
+                          .length
+                      }
                     </p>
-                    <p className="text-sm text-muted-foreground">Total Bookings</p>
+                    <p className="text-sm text-muted-foreground">
+                      Total Bookings
+                    </p>
                   </div>
                   <div className="text-center p-3 bg-green-50 rounded-lg">
                     <p className="text-2xl font-bold text-green-600">
-                      {bookings.filter(b => b.hotel_id === selectedHotel.id && b.status === 'checked_in').length}
+                      {
+                        bookings.filter(
+                          (b) =>
+                            b.hotel_id === selectedHotel.id &&
+                            b.status === "checked_in",
+                        ).length
+                      }
                     </p>
-                    <p className="text-sm text-muted-foreground">Currently Checked In</p>
+                    <p className="text-sm text-muted-foreground">
+                      Currently Checked In
+                    </p>
                   </div>
                   <div className="text-center p-3 bg-orange-50 rounded-lg">
                     <p className="text-2xl font-bold text-orange-600">
-                      {bookings.filter(b => b.hotel_id === selectedHotel.id && b.status === 'confirmed').length}
+                      {
+                        bookings.filter(
+                          (b) =>
+                            b.hotel_id === selectedHotel.id &&
+                            b.status === "confirmed",
+                        ).length
+                      }
                     </p>
-                    <p className="text-sm text-muted-foreground">Upcoming Bookings</p>
+                    <p className="text-sm text-muted-foreground">
+                      Upcoming Bookings
+                    </p>
                   </div>
                 </div>
               </div>

@@ -613,7 +613,9 @@ export default function Activities() {
   const openViewActivity = async (instance: ActivityInstance) => {
     setSelectedInstanceForView(instance);
     try {
-      const res = await fetch(`/api/activities/instances/${instance.id}/participants`);
+      const res = await fetch(
+        `/api/activities/instances/${instance.id}/participants`,
+      );
       if (res.ok) {
         const assignedData = await res.json();
         const normalizedAssigned = Array.isArray(assignedData)
@@ -770,33 +772,46 @@ export default function Activities() {
 
   const handlePrintActivity = (instance: ActivityInstance | null) => {
     if (!instance) {
-      toast({ title: "Print Error", description: "No activity selected.", variant: "destructive" });
+      toast({
+        title: "Print Error",
+        description: "No activity selected.",
+        variant: "destructive",
+      });
       return;
     }
 
-    const win = window.open('', '_blank');
+    const win = window.open("", "_blank");
     if (!win) {
-      toast({ title: "Print Failed", description: "Please allow pop-ups to print.", variant: "destructive" });
+      toast({
+        title: "Print Failed",
+        description: "Please allow pop-ups to print.",
+        variant: "destructive",
+      });
       return;
     }
 
     const location = (() => {
       try {
-        const act = activities.find(a => a.id === instance.activity_id);
-        return act?.location || '';
+        const act = activities.find((a) => a.id === instance.activity_id);
+        return act?.location || "";
       } catch {
-        return '';
+        return "";
       }
     })();
 
-    const parts = (assignedParticipants[instance.id] || []).slice().sort((a, b) => {
-      const ga = (a.group_name || '');
-      const gb = (b.group_name || '');
-      if (ga !== gb) return ga.localeCompare(gb);
-      return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
-    });
+    const parts = (assignedParticipants[instance.id] || [])
+      .slice()
+      .sort((a, b) => {
+        const ga = a.group_name || "";
+        const gb = b.group_name || "";
+        if (ga !== gb) return ga.localeCompare(gb);
+        return `${a.first_name} ${a.last_name}`.localeCompare(
+          `${b.first_name} ${b.last_name}`,
+        );
+      });
 
-    const statusTitle = (s: string) => (s || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const statusTitle = (s: string) =>
+      (s || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
     const html = `
 <!doctype html>
@@ -838,24 +853,27 @@ export default function Activities() {
       <div class="title">${instance.activity_name}</div>
       <div class="meta">Date: ${new Date(instance.scheduled_date).toLocaleDateString()} • Printed: ${new Date().toLocaleString()}</div>
     </div>
-    <div class="pill status-${(instance.status||'scheduled').toLowerCase()}">${statusTitle(instance.status)}</div>
+    <div class="pill status-${(instance.status || "scheduled").toLowerCase()}">${statusTitle(instance.status)}</div>
   </div>
 
   <div class="block">
     <div class="grid">
       <div class="row"><div class="label">Time</div><div>${instance.scheduled_time}</div></div>
-      <div class="row"><div class="label">Guide</div><div>${instance.guide_name || '—'}</div></div>
-      <div class="row"><div class="label">Location</div><div>${location || '—'}</div></div>
+      <div class="row"><div class="label">Guide</div><div>${instance.guide_name || "—"}</div></div>
+      <div class="row"><div class="label">Location</div><div>${location || "—"}</div></div>
       <div class="row"><div class="label">Participants</div><div>${parts.length} / ${instance.max_participants}</div></div>
-      ${instance.booking_reference ? `<div class="row"><div class="label">Booking Ref</div><div>${instance.booking_reference}</div></div>` : ''}
-      ${instance.weather_conditions ? `<div class="row"><div class="label">Weather</div><div>${instance.weather_conditions}</div></div>` : ''}
+      ${instance.booking_reference ? `<div class="row"><div class="label">Booking Ref</div><div>${instance.booking_reference}</div></div>` : ""}
+      ${instance.weather_conditions ? `<div class="row"><div class="label">Weather</div><div>${instance.weather_conditions}</div></div>` : ""}
     </div>
-    ${instance.notes ? `<div class="section"><div class="label" style="display:block;margin-bottom:4px;">Notes</div><div style="font-size:12px;">${instance.notes}</div></div>` : ''}
+    ${instance.notes ? `<div class="section"><div class="label" style="display:block;margin-bottom:4px;">Notes</div><div style="font-size:12px;">${instance.notes}</div></div>` : ""}
   </div>
 
   <div class="block">
     <div style="font-weight:700; margin-bottom:6px;">Participants (${parts.length})</div>
-    ${parts.length === 0 ? `<div class="meta">No participants assigned.</div>` : `
+    ${
+      parts.length === 0
+        ? `<div class="meta">No participants assigned.</div>`
+        : `
       <table>
         <thead>
           <tr>
@@ -867,18 +885,21 @@ export default function Activities() {
         </thead>
         <tbody>
           ${parts
-            .map(p => `
+            .map(
+              (p) => `
               <tr>
                 <td>${p.first_name} ${p.last_name}</td>
-                <td>${p.group_name || 'Individual Guest'}</td>
-                <td>${p.email || ''}</td>
+                <td>${p.group_name || "Individual Guest"}</td>
+                <td>${p.email || ""}</td>
                 <td><div class="sig"></div></td>
               </tr>
-            `)
-            .join('')}
+            `,
+            )
+            .join("")}
         </tbody>
       </table>
-    `}
+    `
+    }
   </div>
 
   <div class="block section">
@@ -896,7 +917,10 @@ export default function Activities() {
     win.print();
     win.close();
 
-    toast({ title: "Print Ready", description: `Prepared ${instance.activity_name} for printing.` });
+    toast({
+      title: "Print Ready",
+      description: `Prepared ${instance.activity_name} for printing.`,
+    });
   };
 
   const openAddParticipants = async (instance: ActivityInstance) => {
@@ -1055,7 +1079,9 @@ export default function Activities() {
     const matchesDate = (() => {
       if (!selectedDate) return true;
       const raw = instance.scheduled_date || "";
-      const dateOnly = raw.includes("T") ? raw.split("T")[0] : (raw.split(" ")[0] || raw);
+      const dateOnly = raw.includes("T")
+        ? raw.split("T")[0]
+        : raw.split(" ")[0] || raw;
       return dateOnly === selectedDate;
     })();
     return matchesSearch && matchesStatus && matchesDate;
@@ -1103,8 +1129,11 @@ export default function Activities() {
           </Button>
           <PrintActivityDetails
             activities={(() => {
-              const lookup = new Map(activities.map(a => [a.id, a.location]));
-              return (sortedInstances || []).map(i => ({ ...i, location: lookup.get(i.activity_id) || "" }));
+              const lookup = new Map(activities.map((a) => [a.id, a.location]));
+              return (sortedInstances || []).map((i) => ({
+                ...i,
+                location: lookup.get(i.activity_id) || "",
+              }));
             })()}
           >
             <Button variant="outline">
