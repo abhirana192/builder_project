@@ -20,7 +20,8 @@
     "test": "vitest --run",
     "format.fix": "prettier --write .",
     "typecheck": "tsc",
-    "electron:start": "npm run build && concurrently \"npm run start\" \"wait-on http://localhost:3000 && npx electron .\""
+    "electron:start": "npm run build && concurrently \"npm run start\" \"wait-on http://localhost:3000 && npx electron .\"",
+    "electron:build": "npm run build && electron-builder -w"
   },
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
