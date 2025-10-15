@@ -254,6 +254,7 @@ const DailyActivityReport: React.FC = () => {
                 <th>Vehicle</th>
                 <th>Driver</th>
                 <th>Pickup Time</th>
+                <th>Flight No.</th>
                 <th>From</th>
                 <th>To</th>
               </tr>
@@ -280,6 +281,7 @@ const DailyActivityReport: React.FC = () => {
                   <td>${t.vehicle_number || 'N/A'}</td>
                   <td>${t.driver_name || 'N/A'}</td>
                   <td class="nowrap">${t.pickup_time ? new Date(t.pickup_time).toLocaleString() : ''}</td>
+                  <td>${(t as any).flight_number || ''}</td>
                   <td>${t.pickup_location || ''}</td>
                   <td>${t.dropoff_location || ''}</td>
                 </tr>`;
@@ -640,6 +642,7 @@ const DailyActivityReport: React.FC = () => {
                   <TableHead>Vehicle</TableHead>
                   <TableHead>Driver</TableHead>
                   <TableHead>Pickup Time</TableHead>
+                  <TableHead>Flight No.</TableHead>
                   <TableHead>From</TableHead>
                   <TableHead>To</TableHead>
                 </TableRow>
@@ -666,6 +669,7 @@ const DailyActivityReport: React.FC = () => {
                       <TableCell>{item.vehicle_number || 'N/A'}</TableCell>
                       <TableCell>{item.driver_name || 'N/A'}</TableCell>
                       <TableCell>{new Date(item.pickup_time).toLocaleString()}</TableCell>
+                      <TableCell>{(item as any).flight_number || ''}</TableCell>
                       <TableCell>{item.pickup_location}</TableCell>
                       <TableCell>{item.dropoff_location}</TableCell>
                     </TableRow>
@@ -692,6 +696,7 @@ const DailyActivityReport: React.FC = () => {
                       <TableCell>{item.vehicle_number || 'N/A'}</TableCell>
                       <TableCell>{item.driver_name || 'N/A'}</TableCell>
                       <TableCell>{new Date(item.pickup_time).toLocaleString()}</TableCell>
+                      <TableCell>{(item as any).flight_number || ''}</TableCell>
                       <TableCell>{item.pickup_location}</TableCell>
                       <TableCell>{item.dropoff_location}</TableCell>
                     </TableRow>
