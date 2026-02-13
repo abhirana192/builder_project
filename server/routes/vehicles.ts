@@ -248,6 +248,49 @@ export const updateTransportDropoffLocation: RequestHandler = (req, res) => {
       return res.status(404).json({ error: "Transport schedule not found" });
     }
 
+    // Fetch the updated schedule to determine if we should propagate to corresponding airport dropoff
+    const schedule: any = queries.getDatabase().prepare('SELECT id, transport_type, groups_data FROM group_transport_schedules WHERE id = ?').get(id);
+
+    try {
+      if (schedule && schedule.transport_type === 'airport_pickup' && dropoff_location) {
+        const groups = (() => {
+          try { return schedule.groups_data ? JSON.parse(schedule.groups_data) : []; } catch { return []; }
+        })();
+        const groupIds = new Set((groups || []).filter((g: any) => g && g.type === 'group' && g.id != null).map((g: any) => g.id));
+        const memberIds = new Set((groups || []).filter((g: any) => g && g.type === 'member' && g.id != null).map((g: any) => g.id));
+
+        // Load potential matching airport_dropoff schedules
+        const candidates: any[] = queries.getDatabase().prepare('SELECT id, groups_data FROM group_transport_schedules WHERE transport_type = "airport_dropoff"').all();
+
+        const toUpdate: number[] = [];
+        for (const c of candidates) {
+          let cGroups: any[] = [];
+          try { cGroups = c.groups_data ? JSON.parse(c.groups_data) : []; } catch { cGroups = []; }
+          const cGroupIds = new Set(cGroups.filter((g: any) => g && g.type === 'group' && g.id != null).map((g: any) => g.id));
+          const cMemberIds = new Set(cGroups.filter((g: any) => g && g.type === 'member' && g.id != null).map((g: any) => g.id));
+
+          // Any overlap qualifies as corresponding schedule
+          const groupOverlap = [...groupIds].some(id => cGroupIds.has(id));
+          const memberOverlap = [...memberIds].some(id => cMemberIds.has(id));
+          if (groupOverlap || memberOverlap) {
+            toUpdate.push(c.id);
+          }
+        }
+
+        // Update pickup_location of matching airport_dropoff schedules
+        for (const dropoffId of toUpdate) {
+          try {
+            queries.updateGroupTransportSchedulePickupLocation().run(dropoff_location, dropoffId);
+            console.log(`Propagated pickup_location to airport_dropoff ${dropoffId}:`, dropoff_location);
+          } catch (e) {
+            console.warn(`Failed to propagate pickup_location for dropoff schedule ${dropoffId}:`, e);
+          }
+        }
+      }
+    } catch (propErr) {
+      console.warn('Error during propagation to airport_dropoff schedules:', propErr);
+    }
+
     res.json({
       message: 'Transport dropoff location updated successfully',
       id: id,

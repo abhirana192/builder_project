@@ -20,7 +20,8 @@
     "test": "vitest --run",
     "format.fix": "prettier --write .",
     "typecheck": "tsc",
-    "electron:start": "npm run build && concurrently \"npm run start\" \"wait-on http://localhost:8080 && npx electron .\""
+    "electron:start": "npm run build && concurrently \"npm run start\" \"wait-on http://localhost:3000 && npx electron .\"",
+    "electron:build": "npm run build && electron-builder -w"
   },
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -110,6 +111,40 @@
     "vaul": "^0.9.3",
     "vite": "^6.2.2",
     "vitest": "^3.1.4",
-    "wait-on": "^8.0.4"
+    "wait-on": "^8.0.4",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.jiguang.tour",
+    "productName": "Jiguang Tour",
+    "asar": true,
+    "files": [
+      "dist/spa/**",
+      "dist/server/**",
+      "public/electron.cjs",
+      "server/db/**"
+    ],
+    "extraResources": [
+      {
+        "from": "server/db/",
+        "to": "server/db/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": true,
+      "createDesktopShortcut": "always",
+      "shortcutName": "Jiguang Tour"
+    }
   }
 }

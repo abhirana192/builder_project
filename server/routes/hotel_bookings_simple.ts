@@ -114,8 +114,8 @@ export const createHotelBooking: RequestHandler = (req, res) => {
     const result = queries.getDatabase().prepare(`
       INSERT INTO hotel_bookings (
         guest_name, guest_id, group_name, hotel_id, room_number, room_type, check_in_date, check_out_date,
-        guests_count, rate_per_night, total_amount, special_requests, status, booking_reference
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', ?)
+        guests_count, rate_per_night, total_amount, special_requests, status, booking_reference, actual_check_in
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'checked_in', ?, datetime('now'))
     `).run(
       guest_name,
       guest_id || null,
@@ -211,5 +211,41 @@ export const getGuestWithGroup: RequestHandler = (req, res) => {
   } catch (error) {
     console.error("Error fetching guest with group:", error);
     res.status(500).json({ error: "Failed to fetch guest information" });
+  }
+};
+
+export const getHotelCheckInsToday: RequestHandler = (req, res) => {
+  try {
+    const { date } = req.query as { date?: string };
+    const sql = `
+      SELECT hb.*, h.name AS hotel_name
+      FROM hotel_bookings hb
+      JOIN hotels h ON hb.hotel_id = h.id
+      WHERE DATE(hb.check_in_date) = DATE(?)
+      ORDER BY h.name, hb.guest_name
+    `;
+    const results = queries.getDatabase().prepare(sql).all(date || new Date().toISOString().slice(0, 10));
+    res.json(results);
+  } catch (error) {
+    console.error("Error fetching today's hotel check-ins:", error);
+    res.status(500).json({ error: "Failed to fetch today's hotel check-ins" });
+  }
+};
+
+export const getHotelCheckOutsToday: RequestHandler = (req, res) => {
+  try {
+    const { date } = req.query as { date?: string };
+    const sql = `
+      SELECT hb.*, h.name AS hotel_name
+      FROM hotel_bookings hb
+      JOIN hotels h ON hb.hotel_id = h.id
+      WHERE DATE(hb.check_out_date) = DATE(?)
+      ORDER BY h.name, hb.guest_name
+    `;
+    const results = queries.getDatabase().prepare(sql).all(date || new Date().toISOString().slice(0, 10));
+    res.json(results);
+  } catch (error) {
+    console.error("Error fetching today's hotel check-outs:", error);
+    res.status(500).json({ error: "Failed to fetch today's hotel check-outs" });
   }
 };

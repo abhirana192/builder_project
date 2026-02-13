@@ -3,14 +3,24 @@ export const fetchWithTimeout = async (url: string, options: RequestInit = {}, t
   console.log(`🔄 Fetching: ${url}`);
 
   try {
+    // Normalize API root to absolute origin when a relative /api path is used.
+    let requestUrl = url;
+    try {
+      if (typeof window !== 'undefined' && url.startsWith('/api/')) {
+        requestUrl = window.location.origin + url;
+      }
+    } catch (e) {
+      // ignore window access errors
+    }
+
     // Use Promise.race for timeout without AbortController
-    const fetchPromise = fetch(url, options);
+    const fetchPromise = fetch(requestUrl, options);
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error(`Request timeout: ${url}`)), timeout);
+      setTimeout(() => reject(new Error(`Request timeout: ${requestUrl}`)), timeout);
     });
 
-    const response = await Promise.race([fetchPromise, timeoutPromise]);
-    console.log(`✅ Fetch completed: ${url} - ${response.status}`);
+    const response: any = await Promise.race([fetchPromise, timeoutPromise]);
+    console.log(`✅ Fetch completed: ${requestUrl} - ${response && response.status}`);
     return response;
   } catch (error) {
     console.error(`❌ Fetch failed: ${url}`, error);

@@ -44,6 +44,30 @@ export const createBooking: RequestHandler = (req, res) => {
       assigned_guide_id
     } = req.body;
 
+    // Generate unique 4-digit invoice number
+    const db = queries.getDatabase();
+    let next = 1;
+    try {
+      const last = db.prepare(`SELECT invoice_number FROM bookings WHERE invoice_number IS NOT NULL ORDER BY CAST(invoice_number AS INTEGER) DESC LIMIT 1`).get() as { invoice_number?: string } | undefined;
+      if (last && last.invoice_number) {
+        const parsed = parseInt(String(last.invoice_number), 10);
+        if (!isNaN(parsed)) next = parsed + 1;
+      }
+    } catch {}
+    if (next > 9999) next = 1;
+    let attempts = 0;
+    let invoice_number = next.toString().padStart(4, '0');
+    while (attempts < 10000) {
+      const exists = db.prepare(`SELECT 1 FROM bookings WHERE invoice_number = ?`).get(invoice_number);
+      if (!exists) break;
+      next = next + 1 > 9999 ? 1 : next + 1;
+      invoice_number = next.toString().padStart(4, '0');
+      attempts++;
+    }
+    if (attempts >= 10000) {
+      return res.status(500).json({ error: 'Unable to generate unique invoice number' });
+    }
+
     const result = queries.createBooking().run(
       booking_reference,
       guest_id,
@@ -56,7 +80,8 @@ export const createBooking: RequestHandler = (req, res) => {
       status,
       payment_status,
       special_requests,
-      assigned_guide_id
+      assigned_guide_id,
+      invoice_number
     );
 
     const newBooking = queries.getBookingById().get(result.lastInsertRowid);

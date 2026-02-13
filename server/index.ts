@@ -1,17 +1,17 @@
 import express from "express";
 import cors from "cors";
 import path from "path"; // Import path module
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { initializeDatabase } from "./db/database";
+import { initializeDatabase, DATABASE_IS_READONLY } from "./db/database";
 import { handleDemo } from "./routes/demo";
-import { 
-  getDashboardStats, 
-  getTodaysArrivals, 
-  getTodaysDepartures, 
-  getActiveBookings 
+import {
+  getDashboardStats,
+  getTodaysArrivals,
+  getTodaysDepartures,
+  getActiveBookings,
 } from "./routes/dashboard";
 import {
   getAllVehicles,
@@ -22,16 +22,14 @@ import {
   deleteTransportSchedule,
   updateTransportDropoffLocation,
   updateTransportPickupLocation,
-  createVehicle
+  createVehicle,
 } from "./routes/vehicles";
-import {
-  deleteVehicle
-} from "./routes/vehicles_delete";
+import { deleteVehicle } from "./routes/vehicles_delete";
 import { createManualTransportSchedule } from "./routes/transport_manual";
-import { 
-  getAllEquipment, 
-  getAvailableEquipment, 
-  updateEquipmentStatus 
+import {
+  getAllEquipment,
+  getAvailableEquipment,
+  updateEquipmentStatus,
 } from "./routes/equipment";
 import {
   getAllHotels,
@@ -43,21 +41,23 @@ import {
   createHotelRoom,
   updateHotelRoom,
   updateRoomStatus,
-  deleteHotelBooking
+  deleteHotelBooking,
 } from "./routes/hotels";
 import {
   getAllHotelBookings,
   createHotelBooking,
   updateBookingStatus,
   getHotelStats,
-  getGuestWithGroup
+  getGuestWithGroup,
+  getHotelCheckInsToday,
+  getHotelCheckOutsToday,
 } from "./routes/hotel_bookings_simple";
 import {
   getAllBookings,
   getBookingById,
   createBooking,
   getBookingsByStatus,
-  getDailyActivityReport // Import the new handler
+  getDailyActivityReport, // Import the new handler
 } from "./routes/bookings";
 import { runMigrations } from "./routes/migrate";
 import {
@@ -66,26 +66,22 @@ import {
   createStaff,
   updateStaff,
   deleteStaff,
-  resetPassword
+  resetPassword,
 } from "./routes/staff";
-import {
-  adminChangePassword
-} from "./routes/staff_admin";
+import { adminChangePassword } from "./routes/staff_admin";
 import {
   clearTransportData,
   clearBookingData,
-  clearAllTransportAndBookings
+  clearAllTransportAndBookings,
 } from "./routes/clear_data";
 import {
   login,
   logout,
   verifyToken,
   getCurrentUser,
-  changePassword
+  changePassword,
 } from "./routes/auth";
-import {
-  getAllGuests
-} from "./routes/guests";
+import { getAllGuests } from "./routes/guests";
 import {
   getAllGroups,
   getGroupById,
@@ -97,7 +93,8 @@ import {
   removeMemberFromGroup,
   testAutoStatusUpdate,
   testAutoTransportScheduling,
-  manualTriggerAutoScheduling
+  manualTriggerAutoScheduling,
+  getGroupBookingsReport,
 } from "./routes/groups";
 import {
   getAllActivities,
@@ -115,7 +112,8 @@ import {
   seedActivitiesData,
   debugActivities,
   fixActivityInstancesTable,
-  addParticipantsToActivity
+  addParticipantsToActivity,
+  getActivityInstanceParticipants,
 } from "./routes/activities";
 
 export function createServer() {
@@ -129,7 +127,7 @@ export function createServer() {
   app.use(express.json());
 
   // Serve static files from the dist/spa directory
-  app.use(express.static(path.join(__dirname, '..', 'dist', 'spa')));
+  app.use(express.static(path.join(__dirname, "..", "dist", "spa")));
 
   // Health check
   app.get("/api/ping", (req, res) => {
@@ -151,7 +149,6 @@ export function createServer() {
   app.get("/api/dashboard/departures", getTodaysDepartures);
   app.get("/api/dashboard/active-bookings", getActiveBookings);
 
-
   // Vehicle/Transport routes
   app.get("/api/vehicles", getAllVehicles);
   app.get("/api/vehicles/available", getAvailableVehicles);
@@ -162,8 +159,14 @@ export function createServer() {
   app.post("/api/transport/schedules", createManualTransportSchedule);
   app.patch("/api/transport/schedules/:id/status", updateTransportStatus);
   app.delete("/api/transport/schedules/:id", deleteTransportSchedule);
-  app.patch("/api/transport/schedules/:id/dropoff-location", updateTransportDropoffLocation);
-  app.patch("/api/transport/schedules/:id/pickup-location", updateTransportPickupLocation);
+  app.patch(
+    "/api/transport/schedules/:id/dropoff-location",
+    updateTransportDropoffLocation,
+  );
+  app.patch(
+    "/api/transport/schedules/:id/pickup-location",
+    updateTransportPickupLocation,
+  );
 
   // Equipment routes
   app.get("/api/equipment", getAllEquipment);
@@ -188,9 +191,12 @@ export function createServer() {
   app.patch("/api/hotel-bookings/:id/status", updateBookingStatus);
   app.get("/api/hotel-stats", getHotelStats);
   app.get("/api/guests/:guestId/group", getGuestWithGroup);
+  app.get("/api/hotels/checkins/today", getHotelCheckInsToday);
+  app.get("/api/hotels/checkouts/today", getHotelCheckOutsToday);
 
-  // Daily Activity Report route
+  // Reports routes
   app.get("/api/reports/daily-activity", getDailyActivityReport);
+  app.get("/api/reports/group-bookings", getGroupBookingsReport);
 
   // Staff routes
   app.get("/api/staff", getAllStaff);
@@ -215,7 +221,10 @@ export function createServer() {
   app.delete("/api/groups/:groupId/members/:memberId", removeMemberFromGroup);
   app.post("/api/groups/test-auto-status", testAutoStatusUpdate);
   app.post("/api/groups/test-auto-transport", testAutoTransportScheduling);
-  app.post("/api/groups/:groupId/trigger-auto-scheduling", manualTriggerAutoScheduling);
+  app.post(
+    "/api/groups/:groupId/trigger-auto-scheduling",
+    manualTriggerAutoScheduling,
+  );
 
   // Migration routes (commented out for security)
   // app.post("/api/migrate", runMigrations);
@@ -225,6 +234,27 @@ export function createServer() {
   app.delete("/api/clear/bookings", clearBookingData);
   app.delete("/api/clear/all-transport-bookings", clearAllTransportAndBookings);
 
+  // Endpoint to report DB mode
+  app.get("/api/db/status", (req, res) => {
+    res.json({ readOnly: !!DATABASE_IS_READONLY });
+  });
+
+  // Block mutating requests if the database is read-only
+  app.use((req, res, next) => {
+    if (
+      DATABASE_IS_READONLY &&
+      ["POST", "PUT", "PATCH", "DELETE"].includes(req.method)
+    ) {
+      return res
+        .status(503)
+        .json({
+          error: "Database is in read-only mode. Please contact administrator.",
+          code: "DATABASE_READONLY",
+        });
+    }
+    next();
+  });
+
   // Activities routes
   app.get("/api/activities", getAllActivities);
   app.get("/api/activities/instances", getActivityInstances);
@@ -233,9 +263,19 @@ export function createServer() {
   app.put("/api/activities/:id", updateActivity);
   app.delete("/api/activities/:id", deleteActivity);
   app.post("/api/activities/schedule", scheduleActivity);
-  app.patch("/api/activities/instances/:id/status", updateActivityInstanceStatus);
+  app.patch(
+    "/api/activities/instances/:id/status",
+    updateActivityInstanceStatus,
+  );
   app.patch("/api/activities/instances/:id/attendance", takeAttendance);
-  app.post("/api/activities/instances/:id/participants", addParticipantsToActivity);
+  app.post(
+    "/api/activities/instances/:id/participants",
+    addParticipantsToActivity,
+  );
+  app.get(
+    "/api/activities/instances/:id/participants",
+    getActivityInstanceParticipants,
+  );
   app.delete("/api/activities/instances/:id", deleteActivityInstance);
   app.get("/api/activities/guides", getAvailableGuides);
   app.get("/api/activities/packages", getTourPackages);

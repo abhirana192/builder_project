@@ -1,14 +1,34 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import PrintActivityDetails from "@/components/PrintActivityDetails";
 import { useToast } from "@/hooks/use-toast";
 import {
   Mountain,
@@ -29,7 +49,7 @@ import {
   Trash2,
   UserPlus,
   RefreshCw,
-  Printer
+  Printer,
 } from "lucide-react";
 
 interface Activity {
@@ -119,8 +139,10 @@ export default function Activities() {
   const [packages, setPackages] = useState<TourPackage[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dbReadOnly, setDbReadOnly] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedDate, setSelectedDate] = useState("");
   const [activeTab, setActiveTab] = useState("schedule");
 
   // Dialog states
@@ -128,57 +150,84 @@ export default function Activities() {
   const [isScheduleActivityOpen, setIsScheduleActivityOpen] = useState(false);
   const [isEditActivityOpen, setIsEditActivityOpen] = useState(false);
   const [isAddParticipantsOpen, setIsAddParticipantsOpen] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
-  const [selectedInstance, setSelectedInstance] = useState<ActivityInstance | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
+    null,
+  );
+  const [selectedInstance, setSelectedInstance] =
+    useState<ActivityInstance | null>(null);
 
   // Form states
   const [activityForm, setActivityForm] = useState({
-    name: '',
-    description: '',
-    location: '',
+    name: "",
+    description: "",
+    location: "",
     duration_hours: 1,
     max_participants: 1,
-    equipment_required: '',
-    difficulty_level: 'easy',
+    equipment_required: "",
+    difficulty_level: "easy",
     weather_dependent: false,
-    tour_package_id: 1
+    tour_package_id: 1,
   });
 
   const [scheduleForm, setScheduleForm] = useState({
     activity_id: 0,
-    scheduled_date: '',
-    scheduled_time: '',
+    scheduled_date: "",
+    scheduled_time: "",
     guide_id: 0,
-    weather_conditions: '',
-    notes: '',
-    participants: [] as number[]
+    weather_conditions: "",
+    notes: "",
+    participants: [] as number[],
   });
 
-  const [selectedParticipants, setSelectedParticipants] = useState<Set<number>>(new Set());
-  const [availableParticipants, setAvailableParticipants] = useState<ActivityParticipant[]>([]);
+  const [selectedParticipants, setSelectedParticipants] = useState<Set<number>>(
+    new Set(),
+  );
+  const [availableParticipants, setAvailableParticipants] = useState<
+    ActivityParticipant[]
+  >([]);
   const [participantSearchTerm, setParticipantSearchTerm] = useState("");
   const [availableGuests, setAvailableGuests] = useState<any[]>([]);
-  const [assignedParticipants, setAssignedParticipants] = useState<{[instanceId: number]: AssignedParticipant[]}>({});
+  const [assignedParticipants, setAssignedParticipants] = useState<{
+    [instanceId: number]: AssignedParticipant[];
+  }>({});
   const [isViewActivityOpen, setIsViewActivityOpen] = useState(false);
-  const [selectedInstanceForView, setSelectedInstanceForView] = useState<ActivityInstance | null>(null);
+  const [selectedInstanceForView, setSelectedInstanceForView] =
+    useState<ActivityInstance | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [activityToDelete, setActivityToDelete] = useState<ActivityInstance | null>(null);
-  const [isDeleteActivityDialogOpen, setIsDeleteActivityDialogOpen] = useState(false);
-  const [activityLibraryToDelete, setActivityLibraryToDelete] = useState<Activity | null>(null);
+  const [activityToDelete, setActivityToDelete] =
+    useState<ActivityInstance | null>(null);
+  const [isDeleteActivityDialogOpen, setIsDeleteActivityDialogOpen] =
+    useState(false);
+  const [activityLibraryToDelete, setActivityLibraryToDelete] =
+    useState<Activity | null>(null);
 
   useEffect(() => {
     fetchData();
+
+    // Check DB status
+    (async () => {
+      try {
+        const res = await fetch("/api/db/status");
+        if (res.ok) {
+          const data = await res.json();
+          setDbReadOnly(!!data.readOnly);
+        }
+      } catch (e) {
+        console.warn("Could not fetch DB status", e);
+      }
+    })();
   }, []);
 
   const fetchData = async () => {
     try {
-      const [activitiesRes, instancesRes, guidesRes, packagesRes, groupsRes] = await Promise.all([
-        fetch('/api/activities'),
-        fetch('/api/activities/instances'),
-        fetch('/api/activities/guides'),
-        fetch('/api/activities/packages'),
-        fetch('/api/groups')
-      ]);
+      const [activitiesRes, instancesRes, guidesRes, packagesRes, groupsRes] =
+        await Promise.all([
+          fetch("/api/activities"),
+          fetch("/api/activities/instances"),
+          fetch("/api/activities/guides"),
+          fetch("/api/activities/packages"),
+          fetch("/api/groups"),
+        ]);
 
       if (activitiesRes.ok) setActivities(await activitiesRes.json());
       if (instancesRes.ok) {
@@ -186,7 +235,9 @@ export default function Activities() {
         setInstances(instancesData);
 
         // Initialize assigned participants based on attendance_count
-        const initialAssignedParticipants: {[instanceId: number]: AssignedParticipant[]} = {};
+        const initialAssignedParticipants: {
+          [instanceId: number]: AssignedParticipant[];
+        } = {};
         instancesData.forEach((instance: any) => {
           if (instance.attendance_count > 0) {
             // Create placeholder participants based on attendance count
@@ -197,8 +248,8 @@ export default function Activities() {
                 first_name: `Participant`,
                 last_name: `${i + 1}`,
                 email: `participant${i + 1}@placeholder.com`,
-                group_name: 'Unknown Group',
-                activity_instance_id: instance.id
+                group_name: "Unknown Group",
+                activity_instance_id: instance.id,
               });
             }
             initialAssignedParticipants[instance.id] = placeholderParticipants;
@@ -211,19 +262,18 @@ export default function Activities() {
       if (packagesRes.ok) setPackages(await packagesRes.json());
       if (groupsRes.ok) setGroups(await groupsRes.json());
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
   };
 
-
   const handleCreateActivity = async () => {
     try {
-      const response = await fetch('/api/activities', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(activityForm)
+      const response = await fetch("/api/activities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(activityForm),
       });
 
       if (response.ok) {
@@ -233,7 +283,7 @@ export default function Activities() {
         resetActivityForm();
       }
     } catch (error) {
-      console.error('Error creating activity:', error);
+      console.error("Error creating activity:", error);
     }
   };
 
@@ -242,27 +292,40 @@ export default function Activities() {
 
     try {
       const response = await fetch(`/api/activities/${selectedActivity.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(activityForm)
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(activityForm),
       });
 
       if (response.ok) {
         const updatedActivity = await response.json();
-        setActivities(activities.map(a => a.id === selectedActivity.id ? updatedActivity : a));
+        setActivities(
+          activities.map((a) =>
+            a.id === selectedActivity.id ? updatedActivity : a,
+          ),
+        );
         setIsEditActivityOpen(false);
         setSelectedActivity(null);
         resetActivityForm();
       }
     } catch (error) {
-      console.error('Error updating activity:', error);
+      console.error("Error updating activity:", error);
     }
   };
 
   const handleScheduleActivity = async () => {
     try {
-      console.log('=== FORM VALIDATION ===');
-      console.log('Form data:', scheduleForm);
+      if (dbReadOnly) {
+        toast({
+          title: "Read-only database",
+          description:
+            "Cannot schedule activities because the database is in read-only mode.",
+          variant: "destructive",
+        });
+        return;
+      }
+      console.log("=== FORM VALIDATION ===");
+      console.log("Form data:", scheduleForm);
 
       // Validate required fields
       if (!scheduleForm.activity_id || scheduleForm.activity_id === 0) {
@@ -292,12 +355,15 @@ export default function Activities() {
         return;
       }
 
-      console.log('Form validation passed');
-      console.log('Available activities:', activities.length);
-      console.log('Available guides:', guides.length);
-      console.log('=== END FORM VALIDATION ===');
+      console.log("Form validation passed");
+      console.log("Available activities:", activities.length);
+      console.log("Available guides:", guides.length);
+      console.log("=== END FORM VALIDATION ===");
 
-      console.log('Scheduling activity with validated form data:', scheduleForm);
+      console.log(
+        "Scheduling activity with validated form data:",
+        scheduleForm,
+      );
 
       // Use XMLHttpRequest as a workaround for fetch body stream issues
       const xhr = new XMLHttpRequest();
@@ -308,66 +374,71 @@ export default function Activities() {
         data: any;
       }
 
-      const responsePromise = new Promise<ScheduleResponse>((resolve, reject) => {
-        xhr.onload = () => {
-          try {
-            console.log('=== SERVER RESPONSE DEBUG ===');
-            console.log('XHR Response status:', xhr.status);
-            console.log('XHR Response statusText:', xhr.statusText);
-            console.log('XHR Response headers:', xhr.getAllResponseHeaders());
-            console.log('XHR Response text (full):', xhr.responseText);
-            console.log('XHR Response text length:', xhr.responseText?.length);
+      const responsePromise = new Promise<ScheduleResponse>(
+        (resolve, reject) => {
+          xhr.onload = () => {
+            try {
+              console.log("=== SERVER RESPONSE DEBUG ===");
+              console.log("XHR Response status:", xhr.status);
+              console.log("XHR Response statusText:", xhr.statusText);
+              console.log("XHR Response headers:", xhr.getAllResponseHeaders());
+              console.log("XHR Response text (full):", xhr.responseText);
+              console.log(
+                "XHR Response text length:",
+                xhr.responseText?.length,
+              );
 
-            let responseData;
+              let responseData;
 
-            if (xhr.responseText) {
-              try {
-                responseData = JSON.parse(xhr.responseText);
-                console.log('Parsed JSON response:', responseData);
-              } catch (parseError) {
-                console.log('Response is not JSON, treating as text');
-                console.log('Parse error:', parseError);
-                responseData = { error: xhr.responseText };
+              if (xhr.responseText) {
+                try {
+                  responseData = JSON.parse(xhr.responseText);
+                  console.log("Parsed JSON response:", responseData);
+                } catch (parseError) {
+                  console.log("Response is not JSON, treating as text");
+                  console.log("Parse error:", parseError);
+                  responseData = { error: xhr.responseText };
+                }
+              } else {
+                console.log("Empty response received");
+                responseData = { error: "Empty response" };
               }
-            } else {
-              console.log('Empty response received');
-              responseData = { error: 'Empty response' };
+
+              console.log("Final response data:", responseData);
+              console.log("=== END SERVER RESPONSE DEBUG ===");
+
+              resolve({
+                ok: xhr.status >= 200 && xhr.status < 300,
+                status: xhr.status,
+                data: responseData,
+              });
+            } catch (error) {
+              console.error("Error processing response:", error);
+              reject(error);
             }
+          };
 
-            console.log('Final response data:', responseData);
-            console.log('=== END SERVER RESPONSE DEBUG ===');
+          xhr.onerror = () => {
+            reject(new Error("Network error"));
+          };
 
-            resolve({
-              ok: xhr.status >= 200 && xhr.status < 300,
-              status: xhr.status,
-              data: responseData
-            });
-          } catch (error) {
-            console.error('Error processing response:', error);
-            reject(error);
-          }
-        };
+          xhr.ontimeout = () => {
+            reject(new Error("Request timeout"));
+          };
+        },
+      );
 
-        xhr.onerror = () => {
-          reject(new Error('Network error'));
-        };
-
-        xhr.ontimeout = () => {
-          reject(new Error('Request timeout'));
-        };
-      });
-
-      xhr.open('POST', '/api/activities/schedule');
-      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.open("POST", "/api/activities/schedule");
+      xhr.setRequestHeader("Content-Type", "application/json");
       xhr.timeout = 30000; // 30 second timeout
       xhr.send(JSON.stringify(scheduleForm));
 
       const response = await responsePromise;
 
-      console.log('Final response:', response);
+      console.log("Final response:", response);
 
       if (response.ok && response.data && !response.data.error) {
-        console.log('Success! New instance created');
+        console.log("Success! New instance created");
         setInstances([...instances, response.data]);
         setIsScheduleActivityOpen(false);
         resetScheduleForm();
@@ -377,8 +448,11 @@ export default function Activities() {
           variant: "default",
         });
       } else {
-        const errorMessage = response.data?.error || response.data?.message || `Server error (${response.status})`;
-        console.error('Request failed:', errorMessage);
+        const errorMessage =
+          response.data?.error ||
+          response.data?.message ||
+          `Server error (${response.status})`;
+        console.error("Request failed:", errorMessage);
         toast({
           title: "Scheduling Failed",
           description: errorMessage,
@@ -386,44 +460,56 @@ export default function Activities() {
         });
       }
     } catch (error) {
-      console.error('Request error:', error);
+      console.error("Request error:", error);
       toast({
         title: "Network Error",
-        description: error.message || 'Failed to schedule activity due to network error',
+        description:
+          error.message || "Failed to schedule activity due to network error",
         variant: "destructive",
       });
     }
   };
 
-
   const handleAddParticipants = async () => {
     if (!selectedInstance) return;
 
+    if (dbReadOnly) {
+      toast({
+        title: "Read-only database",
+        description:
+          "Cannot add participants because the database is in read-only mode.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Send the full selection to the server to add/remove accordingly
     const participantIds = Array.from(selectedParticipants);
 
     try {
-      const response = await fetch(`/api/activities/instances/${selectedInstance.id}/participants`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          participant_ids: participantIds
-        })
-      });
+      const response = await fetch(
+        `/api/activities/instances/${selectedInstance.id}/participants`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ participant_ids: participantIds }),
+        },
+      );
 
       if (response.ok) {
         const updatedInstance = await response.json();
 
-        // Update the attendance_count to match the actual participants assigned
-        const finalParticipantCount = participantIds.length;
-        updatedInstance.attendance_count = finalParticipantCount;
+        setInstances(
+          instances.map((i) =>
+            i.id === selectedInstance.id ? updatedInstance : i,
+          ),
+        );
 
-        setInstances(instances.map(i => i.id === selectedInstance.id ? updatedInstance : i));
-
-        // Build the complete list of assigned participants based on selected IDs
+        // Build the complete list for this activity from the selection
         const allAssignedParticipants: AssignedParticipant[] = [];
 
         // Add from available participants (group members)
-        availableParticipants.forEach(p => {
+        availableParticipants.forEach((p) => {
           if (participantIds.includes(p.id)) {
             allAssignedParticipants.push({
               id: p.id,
@@ -431,45 +517,44 @@ export default function Activities() {
               last_name: p.last_name,
               email: p.email,
               group_name: p.group_name,
-              activity_instance_id: selectedInstance.id
+              activity_instance_id: selectedInstance.id,
             });
           }
         });
 
         // Add from available guests (individual guests)
-        availableGuests.forEach(g => {
+        availableGuests.forEach((g) => {
           if (participantIds.includes(g.id)) {
             allAssignedParticipants.push({
               id: g.id,
               first_name: g.first_name,
               last_name: g.last_name,
               email: g.email,
-              group_name: 'Individual Guest',
-              activity_instance_id: selectedInstance.id
+              group_name: "Individual Guest",
+              activity_instance_id: selectedInstance.id,
             });
           }
         });
 
-        // Replace the entire list for this activity (don't append)
-        setAssignedParticipants(prev => ({
+        setAssignedParticipants((prev) => ({
           ...prev,
-          [selectedInstance.id]: allAssignedParticipants
+          [selectedInstance.id]: allAssignedParticipants,
         }));
 
         setIsAddParticipantsOpen(false);
         setSelectedInstance(null);
         setSelectedParticipants(new Set());
         toast({
-          title: "Success!",
-          description: `${participantIds.length} participants added to the activity`,
+          title: "Saved",
+          description: "Participants list updated for the activity",
           variant: "default",
         });
       }
     } catch (error) {
-      console.error('Error adding participants:', error);
+      console.error("Error updating participants:", error);
       toast({
         title: "Error",
-        description: "Failed to add participants",
+        description: "Failed to update participants",
         variant: "destructive",
       });
     }
@@ -477,57 +562,82 @@ export default function Activities() {
 
   const resetActivityForm = () => {
     setActivityForm({
-      name: '',
-      description: '',
-      location: '',
+      name: "",
+      description: "",
+      location: "",
       duration_hours: 1,
       max_participants: 1,
-      equipment_required: '',
-      difficulty_level: 'easy',
+      equipment_required: "",
+      difficulty_level: "easy",
       weather_dependent: false,
-      tour_package_id: 1
+      tour_package_id: 1,
     });
   };
 
   const resetScheduleForm = () => {
     setScheduleForm({
       activity_id: 0,
-      scheduled_date: '',
-      scheduled_time: '',
+      scheduled_date: "",
+      scheduled_time: "",
       guide_id: 0,
-      weather_conditions: '',
-      notes: '',
-      participants: []
+      weather_conditions: "",
+      notes: "",
+      participants: [],
     });
   };
 
   const openEditActivity = (activity: Activity) => {
     setSelectedActivity(activity);
     setActivityForm({
-      name: activity.name || '',
-      description: activity.description || '',
-      location: activity.location || '',
+      name: activity.name || "",
+      description: activity.description || "",
+      location: activity.location || "",
       duration_hours: activity.duration_hours || 1,
       max_participants: activity.max_participants || 1,
-      equipment_required: activity.equipment_required || '',
-      difficulty_level: activity.difficulty_level || 'easy',
+      equipment_required: activity.equipment_required || "",
+      difficulty_level: activity.difficulty_level || "easy",
       weather_dependent: activity.weather_dependent || false,
-      tour_package_id: 1 // Would need to get this from activity
+      tour_package_id: 1, // Would need to get this from activity
     });
     setIsEditActivityOpen(true);
   };
 
   const openScheduleActivity = (activity: Activity) => {
-    setScheduleForm(prev => ({
+    setScheduleForm((prev) => ({
       ...prev,
-      activity_id: activity.id
+      activity_id: activity.id,
     }));
     setIsScheduleActivityOpen(true);
   };
 
-  const openViewActivity = (instance: ActivityInstance) => {
+  const openViewActivity = async (instance: ActivityInstance) => {
     setSelectedInstanceForView(instance);
-    setIsViewActivityOpen(true);
+    try {
+      const res = await fetch(
+        `/api/activities/instances/${instance.id}/participants`,
+      );
+      if (res.ok) {
+        const assignedData = await res.json();
+        const normalizedAssigned = Array.isArray(assignedData)
+          ? assignedData.map((p: any) => ({
+              id: p.id,
+              first_name: p.first_name,
+              last_name: p.last_name,
+              email: p.email || "",
+              group_name: p.group_name || undefined,
+              activity_instance_id: instance.id,
+            }))
+          : [];
+        setAssignedParticipants((prev) => ({
+          ...prev,
+          [instance.id]: normalizedAssigned,
+        }));
+      }
+    } catch (e) {
+      console.warn("Failed to fetch participants for view:", e);
+    } finally {
+      setIsViewActivityOpen(true);
+    }
   };
 
   const openDeleteDialog = (instance: ActivityInstance) => {
@@ -544,14 +654,17 @@ export default function Activities() {
     if (!activityToDelete) return;
 
     try {
-      const response = await fetch(`/api/activities/instances/${activityToDelete.id}`, {
-        method: 'DELETE'
-      });
+      const response = await fetch(
+        `/api/activities/instances/${activityToDelete.id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (response.ok) {
-        setInstances(instances.filter(i => i.id !== activityToDelete.id));
+        setInstances(instances.filter((i) => i.id !== activityToDelete.id));
         // Remove assigned participants for this activity
-        setAssignedParticipants(prev => {
+        setAssignedParticipants((prev) => {
           const updated = { ...prev };
           delete updated[activityToDelete.id];
           return updated;
@@ -571,7 +684,7 @@ export default function Activities() {
         });
       }
     } catch (error) {
-      console.error('Error deleting activity:', error);
+      console.error("Error deleting activity:", error);
       toast({
         title: "Error",
         description: "Failed to delete activity",
@@ -582,15 +695,20 @@ export default function Activities() {
 
   const handleStatusChange = async (instanceId: number, newStatus: string) => {
     try {
-      const response = await fetch(`/api/activities/instances/${instanceId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
+      const response = await fetch(
+        `/api/activities/instances/${instanceId}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        },
+      );
 
       if (response.ok) {
         const updatedInstance = await response.json();
-        setInstances(instances.map(i => i.id === instanceId ? updatedInstance : i));
+        setInstances(
+          instances.map((i) => (i.id === instanceId ? updatedInstance : i)),
+        );
 
         // Update selected instance for view if it's the same one
         if (selectedInstanceForView?.id === instanceId) {
@@ -604,7 +722,7 @@ export default function Activities() {
         });
       }
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error("Error updating status:", error);
       toast({
         title: "Error",
         description: "Failed to update status",
@@ -617,12 +735,17 @@ export default function Activities() {
     if (!activityLibraryToDelete) return;
 
     try {
-      const response = await fetch(`/api/activities/${activityLibraryToDelete.id}`, {
-        method: 'DELETE'
-      });
+      const response = await fetch(
+        `/api/activities/${activityLibraryToDelete.id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (response.ok) {
-        setActivities(activities.filter(a => a.id !== activityLibraryToDelete.id));
+        setActivities(
+          activities.filter((a) => a.id !== activityLibraryToDelete.id),
+        );
         setIsDeleteActivityDialogOpen(false);
         setActivityLibraryToDelete(null);
         toast({
@@ -638,7 +761,7 @@ export default function Activities() {
         });
       }
     } catch (error) {
-      console.error('Error deleting activity:', error);
+      console.error("Error deleting activity:", error);
       toast({
         title: "Error",
         description: "Failed to delete activity",
@@ -648,37 +771,173 @@ export default function Activities() {
   };
 
   const handlePrintActivity = (instance: ActivityInstance | null) => {
-    if (instance) {
-      // For a real application, you might generate a specific print-friendly view
-      // or PDF. For this example, we'll just trigger the browser's print dialog.
-      console.log('Printing activity instance:', instance);
-      toast({
-        title: "Printing Activity",
-        description: `Preparing to print details for ${instance.activity_name}.`,
-        variant: "default",
-      });
-      window.print(); // Triggers the browser's print dialog
-    } else {
+    if (!instance) {
       toast({
         title: "Print Error",
-        description: "No activity instance selected for printing.",
+        description: "No activity selected.",
         variant: "destructive",
       });
+      return;
     }
+
+    const win = window.open("", "_blank");
+    if (!win) {
+      toast({
+        title: "Print Failed",
+        description: "Please allow pop-ups to print.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const location = (() => {
+      try {
+        const act = activities.find((a) => a.id === instance.activity_id);
+        return act?.location || "";
+      } catch {
+        return "";
+      }
+    })();
+
+    const parts = (assignedParticipants[instance.id] || [])
+      .slice()
+      .sort((a, b) => {
+        const ga = a.group_name || "";
+        const gb = b.group_name || "";
+        if (ga !== gb) return ga.localeCompare(gb);
+        return `${a.first_name} ${a.last_name}`.localeCompare(
+          `${b.first_name} ${b.last_name}`,
+        );
+      });
+
+    const statusTitle = (s: string) =>
+      (s || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+    const html = `
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Activity — ${instance.activity_name}</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    :root { --ink:#111827; --muted:#6b7280; --line:#e5e7eb; }
+    *{ box-sizing:border-box; }
+    body{ font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; color:var(--ink); }
+    .header{ display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid var(--ink); padding-bottom:8px; margin-bottom:14px; }
+    .title{ font-size:22px; font-weight:800; }
+    .meta{ color:var(--muted); font-size:12px; }
+    .pill{ display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); }
+    .status-scheduled{ background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+    .status-in_progress{ background:#fff7ed; color:#c2410c; border-color:#fed7aa; }
+    .status-completed{ background:#ecfdf5; color:#047857; border-color:#a7f3d0; }
+    .status-cancelled{ background:#fef2f2; color:#b91c1c; border-color:#fecaca; }
+
+    .block{ border:1px solid var(--line); border-radius:8px; padding:12px; margin:10px 0; page-break-inside:avoid; }
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:8px 16px; }
+    .row{ display:flex; gap:6px; font-size:12px; }
+    .label{ color:var(--muted); min-width:90px; }
+
+    .section{ margin-top:10px; padding-top:8px; border-top:1px dashed var(--line); }
+    table{ width:100%; border-collapse:collapse; margin-top:6px; }
+    th, td{ font-size:12px; text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+    th{ color:var(--muted); font-weight:600; }
+    .sig{ height:18px; border-bottom:1px solid #9ca3af; }
+
+    .footer{ margin-top:18px; border-top:2px solid var(--ink); padding-top:8px; text-align:center; color:var(--muted); font-size:11px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="title">${instance.activity_name}</div>
+      <div class="meta">Date: ${new Date(instance.scheduled_date).toLocaleDateString()} • Printed: ${new Date().toLocaleString()}</div>
+    </div>
+    <div class="pill status-${(instance.status || "scheduled").toLowerCase()}">${statusTitle(instance.status)}</div>
+  </div>
+
+  <div class="block">
+    <div class="grid">
+      <div class="row"><div class="label">Time</div><div>${instance.scheduled_time}</div></div>
+      <div class="row"><div class="label">Guide</div><div>${instance.guide_name || "—"}</div></div>
+      <div class="row"><div class="label">Location</div><div>${location || "—"}</div></div>
+      <div class="row"><div class="label">Participants</div><div>${parts.length} / ${instance.max_participants}</div></div>
+      ${instance.booking_reference ? `<div class="row"><div class="label">Booking Ref</div><div>${instance.booking_reference}</div></div>` : ""}
+      ${instance.weather_conditions ? `<div class="row"><div class="label">Weather</div><div>${instance.weather_conditions}</div></div>` : ""}
+    </div>
+    ${instance.notes ? `<div class="section"><div class="label" style="display:block;margin-bottom:4px;">Notes</div><div style="font-size:12px;">${instance.notes}</div></div>` : ""}
+  </div>
+
+  <div class="block">
+    <div style="font-weight:700; margin-bottom:6px;">Participants (${parts.length})</div>
+    ${
+      parts.length === 0
+        ? `<div class="meta">No participants assigned.</div>`
+        : `
+      <table>
+        <thead>
+          <tr>
+            <th style="width:32%">Name</th>
+            <th style="width:26%">Group</th>
+            <th style="width:26%">Email</th>
+            <th style="width:16%">Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${parts
+            .map(
+              (p) => `
+              <tr>
+                <td>${p.first_name} ${p.last_name}</td>
+                <td>${p.group_name || "Individual Guest"}</td>
+                <td>${p.email || ""}</td>
+                <td><div class="sig"></div></td>
+              </tr>
+            `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    `
+    }
+  </div>
+
+  <div class="block section">
+    <div style="font-weight:600; margin-bottom:6px;">Tour Guide Signature</div>
+    <div class="sig" style="height:24px;"></div>
+  </div>
+
+  <div class="footer">Manager Signature: _________________________ Time: _________</div>
+</body>
+</html>`;
+
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
+
+    toast({
+      title: "Print Ready",
+      description: `Prepared ${instance.activity_name} for printing.`,
+    });
   };
 
   const openAddParticipants = async (instance: ActivityInstance) => {
     setSelectedInstance(instance);
 
     try {
-      // Fetch groups and individual guests
-      const [groupsResponse, guestsResponse] = await Promise.all([
-        fetch('/api/groups'),
-        fetch('/api/guests')
-      ]);
+      // Fetch groups, individual guests, and currently assigned participants
+      const [groupsResponse, guestsResponse, assignedResponse] =
+        await Promise.all([
+          fetch("/api/groups"),
+          fetch("/api/guests"),
+          fetch(`/api/activities/instances/${instance.id}/participants`),
+        ]);
 
       const groupsData = await groupsResponse.json();
       const guestsData = await guestsResponse.json();
+      const assignedData = await assignedResponse.json();
 
       // Fetch detailed group information with members for each group
       const groupsWithMembers: Group[] = [];
@@ -708,30 +967,50 @@ export default function Activities() {
               last_name: member.last_name,
               email: member.email,
               group_name: group.group_name,
-              group_id: group.id
+              group_id: group.id,
             });
           });
         }
       });
 
       // Filter out guests who are already part of groups to avoid duplicates
-      const individualGuests = guestsData.filter((guest: any) => !groupMemberIds.has(guest.id));
+      const individualGuests = guestsData.filter(
+        (guest: any) => !groupMemberIds.has(guest.id),
+      );
 
-      // Get already assigned participants for this activity instance
-      const currentlyAssigned = assignedParticipants[instance.id] || [];
-      const assignedIds = new Set(currentlyAssigned.map(p => p.id));
+      // Use server-assigned participants if available (ensures correctness after refresh)
+      const normalizedAssigned = Array.isArray(assignedData)
+        ? assignedData.map((p: any) => ({
+            id: p.id,
+            first_name: p.first_name,
+            last_name: p.last_name,
+            email: p.email || "",
+            group_name: p.group_name || undefined,
+            activity_instance_id: instance.id,
+          }))
+        : [];
 
-      // Show all participants (don't filter out assigned ones)
+      const assignedIds = new Set<number>(
+        normalizedAssigned.map((p: any) => p.id),
+      );
+
+      // Show all participants and pre-check already assigned for add/remove UX
       setAvailableParticipants(allParticipants);
       setAvailableGuests(individualGuests);
-      setGroups(groupsWithMembers); // Update groups state with members
+      setGroups(groupsWithMembers);
+
+      // Update assigned participants cache for this instance
+      setAssignedParticipants((prev) => ({
+        ...prev,
+        [instance.id]: normalizedAssigned,
+      }));
 
       // Pre-select already assigned participants
       setSelectedParticipants(assignedIds);
       setParticipantSearchTerm("");
       setIsAddParticipantsOpen(true);
     } catch (error) {
-      console.error('Error fetching participants:', error);
+      console.error("Error fetching participants:", error);
       toast({
         title: "Error",
         description: "Failed to load participants",
@@ -742,31 +1021,46 @@ export default function Activities() {
 
   const getDifficultyColor = (level: string) => {
     switch (level) {
-      case 'easy': return 'default';
-      case 'moderate': return 'secondary';
-      case 'challenging': return 'destructive';
-      case 'expert': return 'destructive';
-      default: return 'outline';
+      case "easy":
+        return "default";
+      case "moderate":
+        return "secondary";
+      case "challenging":
+        return "destructive";
+      case "expert":
+        return "destructive";
+      default:
+        return "outline";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'default';
-      case 'in_progress': return 'secondary';
-      case 'completed': return 'default';
-      case 'cancelled': return 'destructive';
-      default: return 'outline';
+      case "scheduled":
+        return "default";
+      case "in_progress":
+        return "secondary";
+      case "completed":
+        return "default";
+      case "cancelled":
+        return "destructive";
+      default:
+        return "outline";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'scheduled': return Calendar;
-      case 'in_progress': return Clock;
-      case 'completed': return CheckCircle;
-      case 'cancelled': return XCircle;
-      default: return AlertTriangle;
+      case "scheduled":
+        return Calendar;
+      case "in_progress":
+        return Clock;
+      case "completed":
+        return CheckCircle;
+      case "cancelled":
+        return XCircle;
+      default:
+        return AlertTriangle;
     }
   };
 
@@ -774,11 +1068,33 @@ export default function Activities() {
     return `${new Date(date).toLocaleDateString()} at ${time}`;
   };
 
-  const filteredInstances = instances.filter(instance => {
-    const matchesSearch = instance.activity_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         instance.booking_reference.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || instance.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const filteredInstances = instances.filter((instance) => {
+    const matchesSearch =
+      instance.activity_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      instance.booking_reference
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || instance.status === statusFilter;
+    const matchesDate = (() => {
+      if (!selectedDate) return true;
+      const raw = instance.scheduled_date || "";
+      const dateOnly = raw.includes("T")
+        ? raw.split("T")[0]
+        : raw.split(" ")[0] || raw;
+      return dateOnly === selectedDate;
+    })();
+    return matchesSearch && matchesStatus && matchesDate;
+  });
+
+  const sortedInstances = filteredInstances.slice().sort((a, b) => {
+    const toTs = (x: ActivityInstance) => {
+      const d = (x.scheduled_date || "").split("T")[0];
+      const t = x.scheduled_time || "00:00";
+      const dt = new Date(`${d}T${t}`);
+      return dt.getTime() || 0;
+    };
+    return toTs(b) - toTs(a);
   });
 
   if (loading) {
@@ -799,7 +1115,9 @@ export default function Activities() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Activities & Tours</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            Activities & Tours
+          </h1>
           <p className="text-muted-foreground">
             Manage tour activities, attendance tracking, and guide assignments
           </p>
@@ -809,7 +1127,24 @@ export default function Activities() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
-          <Dialog open={isScheduleActivityOpen} onOpenChange={setIsScheduleActivityOpen}>
+          <PrintActivityDetails
+            activities={(() => {
+              const lookup = new Map(activities.map((a) => [a.id, a.location]));
+              return (sortedInstances || []).map((i) => ({
+                ...i,
+                location: lookup.get(i.activity_id) || "",
+              }));
+            })()}
+          >
+            <Button variant="outline">
+              <Printer className="mr-2 h-4 w-4" />
+              Print Schedule
+            </Button>
+          </PrintActivityDetails>
+          <Dialog
+            open={isScheduleActivityOpen}
+            onOpenChange={setIsScheduleActivityOpen}
+          >
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Plus className="mr-2 h-4 w-4" />
@@ -819,19 +1154,36 @@ export default function Activities() {
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>Schedule Activity</DialogTitle>
-                <DialogDescription>Schedule an activity instance for specific date and time</DialogDescription>
+                <DialogDescription>
+                  Schedule an activity instance for specific date and time
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Activity</Label>
-                    <Select value={scheduleForm.activity_id > 0 ? scheduleForm.activity_id.toString() : ""} onValueChange={(value) => setScheduleForm({...scheduleForm, activity_id: parseInt(value) || 0})}>
+                    <Select
+                      value={
+                        scheduleForm.activity_id > 0
+                          ? scheduleForm.activity_id.toString()
+                          : ""
+                      }
+                      onValueChange={(value) =>
+                        setScheduleForm({
+                          ...scheduleForm,
+                          activity_id: parseInt(value) || 0,
+                        })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select activity" />
                       </SelectTrigger>
                       <SelectContent>
-                        {activities.map(activity => (
-                          <SelectItem key={activity.id} value={activity.id.toString()}>
+                        {activities.map((activity) => (
+                          <SelectItem
+                            key={activity.id}
+                            value={activity.id.toString()}
+                          >
                             {activity.name}
                           </SelectItem>
                         ))}
@@ -840,13 +1192,28 @@ export default function Activities() {
                   </div>
                   <div>
                     <Label>Guide</Label>
-                    <Select value={scheduleForm.guide_id > 0 ? scheduleForm.guide_id.toString() : ""} onValueChange={(value) => setScheduleForm({...scheduleForm, guide_id: parseInt(value) || 0})}>
+                    <Select
+                      value={
+                        scheduleForm.guide_id > 0
+                          ? scheduleForm.guide_id.toString()
+                          : ""
+                      }
+                      onValueChange={(value) =>
+                        setScheduleForm({
+                          ...scheduleForm,
+                          guide_id: parseInt(value) || 0,
+                        })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select guide" />
                       </SelectTrigger>
                       <SelectContent>
-                        {guides.map(guide => (
-                          <SelectItem key={guide.id} value={guide.id.toString()}>
+                        {guides.map((guide) => (
+                          <SelectItem
+                            key={guide.id}
+                            value={guide.id.toString()}
+                          >
                             {guide.first_name} {guide.last_name}
                           </SelectItem>
                         ))}
@@ -860,7 +1227,12 @@ export default function Activities() {
                     <Input
                       type="date"
                       value={scheduleForm.scheduled_date}
-                      onChange={(e) => setScheduleForm({...scheduleForm, scheduled_date: e.target.value})}
+                      onChange={(e) =>
+                        setScheduleForm({
+                          ...scheduleForm,
+                          scheduled_date: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div>
@@ -868,7 +1240,12 @@ export default function Activities() {
                     <Input
                       type="time"
                       value={scheduleForm.scheduled_time}
-                      onChange={(e) => setScheduleForm({...scheduleForm, scheduled_time: e.target.value})}
+                      onChange={(e) =>
+                        setScheduleForm({
+                          ...scheduleForm,
+                          scheduled_time: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -877,7 +1254,12 @@ export default function Activities() {
                   <Input
                     placeholder="e.g., Clear, sunny, 15°C"
                     value={scheduleForm.weather_conditions}
-                    onChange={(e) => setScheduleForm({...scheduleForm, weather_conditions: e.target.value})}
+                    onChange={(e) =>
+                      setScheduleForm({
+                        ...scheduleForm,
+                        weather_conditions: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div>
@@ -885,14 +1267,25 @@ export default function Activities() {
                   <Textarea
                     placeholder="Additional notes or instructions"
                     value={scheduleForm.notes}
-                    onChange={(e) => setScheduleForm({...scheduleForm, notes: e.target.value})}
+                    onChange={(e) =>
+                      setScheduleForm({
+                        ...scheduleForm,
+                        notes: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsScheduleActivityOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsScheduleActivityOpen(false)}
+                  >
                     Cancel
                   </Button>
-                  <Button onClick={handleScheduleActivity}>
+                  <Button
+                    onClick={handleScheduleActivity}
+                    disabled={dbReadOnly}
+                  >
                     Schedule Activity
                   </Button>
                 </div>
@@ -900,7 +1293,10 @@ export default function Activities() {
             </DialogContent>
           </Dialog>
 
-          <Dialog open={isCreateActivityOpen} onOpenChange={setIsCreateActivityOpen}>
+          <Dialog
+            open={isCreateActivityOpen}
+            onOpenChange={setIsCreateActivityOpen}
+          >
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
@@ -910,7 +1306,9 @@ export default function Activities() {
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>Create New Activity</DialogTitle>
-                <DialogDescription>Add a new activity to your tour library</DialogDescription>
+                <DialogDescription>
+                  Add a new activity to your tour library
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -919,7 +1317,12 @@ export default function Activities() {
                     <Input
                       placeholder="e.g., Geysir Visit"
                       value={activityForm.name}
-                      onChange={(e) => setActivityForm({...activityForm, name: e.target.value})}
+                      onChange={(e) =>
+                        setActivityForm({
+                          ...activityForm,
+                          name: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div>
@@ -927,7 +1330,12 @@ export default function Activities() {
                     <Input
                       placeholder="e.g., Geysir Geothermal Area"
                       value={activityForm.location}
-                      onChange={(e) => setActivityForm({...activityForm, location: e.target.value})}
+                      onChange={(e) =>
+                        setActivityForm({
+                          ...activityForm,
+                          location: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -936,7 +1344,12 @@ export default function Activities() {
                   <Textarea
                     placeholder="Describe the activity"
                     value={activityForm.description}
-                    onChange={(e) => setActivityForm({...activityForm, description: e.target.value})}
+                    onChange={(e) =>
+                      setActivityForm({
+                        ...activityForm,
+                        description: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
@@ -947,7 +1360,12 @@ export default function Activities() {
                       min="0.5"
                       step="0.5"
                       value={activityForm.duration_hours.toString()}
-                      onChange={(e) => setActivityForm({...activityForm, duration_hours: parseFloat(e.target.value) || 0.5})}
+                      onChange={(e) =>
+                        setActivityForm({
+                          ...activityForm,
+                          duration_hours: parseFloat(e.target.value) || 0.5,
+                        })
+                      }
                     />
                   </div>
                   <div>
@@ -956,12 +1374,25 @@ export default function Activities() {
                       type="number"
                       min="1"
                       value={activityForm.max_participants.toString()}
-                      onChange={(e) => setActivityForm({...activityForm, max_participants: parseInt(e.target.value) || 1})}
+                      onChange={(e) =>
+                        setActivityForm({
+                          ...activityForm,
+                          max_participants: parseInt(e.target.value) || 1,
+                        })
+                      }
                     />
                   </div>
                   <div>
                     <Label>Difficulty Level</Label>
-                    <Select value={activityForm.difficulty_level} onValueChange={(value) => setActivityForm({...activityForm, difficulty_level: value})}>
+                    <Select
+                      value={activityForm.difficulty_level}
+                      onValueChange={(value) =>
+                        setActivityForm({
+                          ...activityForm,
+                          difficulty_level: value,
+                        })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -979,7 +1410,12 @@ export default function Activities() {
                   <Input
                     placeholder="e.g., Crampons, helmets, ice axes"
                     value={activityForm.equipment_required}
-                    onChange={(e) => setActivityForm({...activityForm, equipment_required: e.target.value})}
+                    onChange={(e) =>
+                      setActivityForm({
+                        ...activityForm,
+                        equipment_required: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div className="flex items-center space-x-2">
@@ -987,12 +1423,20 @@ export default function Activities() {
                     type="checkbox"
                     id="weather_dependent"
                     checked={activityForm.weather_dependent}
-                    onChange={(e) => setActivityForm({...activityForm, weather_dependent: e.target.checked})}
+                    onChange={(e) =>
+                      setActivityForm({
+                        ...activityForm,
+                        weather_dependent: e.target.checked,
+                      })
+                    }
                   />
                   <Label htmlFor="weather_dependent">Weather Dependent</Label>
                 </div>
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsCreateActivityOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsCreateActivityOpen(false)}
+                  >
                     Cancel
                   </Button>
                   <Button onClick={handleCreateActivity}>
@@ -1012,8 +1456,12 @@ export default function Activities() {
             <div className="flex items-center space-x-2">
               <Mountain className="h-5 w-5 text-primary" />
               <div>
-                <p className="text-2xl font-bold">{activities.filter(a => a.is_active).length}</p>
-                <p className="text-sm text-muted-foreground">Active Activities</p>
+                <p className="text-2xl font-bold">
+                  {activities.filter((a) => a.is_active).length}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Active Activities
+                </p>
               </div>
             </div>
           </CardContent>
@@ -1023,7 +1471,9 @@ export default function Activities() {
             <div className="flex items-center space-x-2">
               <Calendar className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="text-2xl font-bold">{instances.filter(i => i.status === 'scheduled').length}</p>
+                <p className="text-2xl font-bold">
+                  {instances.filter((i) => i.status === "scheduled").length}
+                </p>
                 <p className="text-sm text-muted-foreground">Scheduled Today</p>
               </div>
             </div>
@@ -1034,7 +1484,9 @@ export default function Activities() {
             <div className="flex items-center space-x-2">
               <Clock className="h-5 w-5 text-orange-600" />
               <div>
-                <p className="text-2xl font-bold">{instances.filter(i => i.status === 'in_progress').length}</p>
+                <p className="text-2xl font-bold">
+                  {instances.filter((i) => i.status === "in_progress").length}
+                </p>
                 <p className="text-sm text-muted-foreground">In Progress</p>
               </div>
             </div>
@@ -1045,8 +1497,12 @@ export default function Activities() {
             <div className="flex items-center space-x-2">
               <Users className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-2xl font-bold">{instances.reduce((sum, i) => sum + i.attendance_count, 0)}</p>
-                <p className="text-sm text-muted-foreground">Participants Today</p>
+                <p className="text-2xl font-bold">
+                  {instances.reduce((sum, i) => sum + i.attendance_count, 0)}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Participants Today
+                </p>
               </div>
             </div>
           </CardContent>
@@ -1076,6 +1532,12 @@ export default function Activities() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-[170px]"
+                  />
                   <Filter className="h-4 w-4 text-muted-foreground" />
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-[150px]">
@@ -1096,13 +1558,18 @@ export default function Activities() {
 
           {/* Activity Schedule */}
           <div className="grid gap-4">
-            {filteredInstances.map((instance) => {
+            {sortedInstances.map((instance) => {
               const StatusIcon = getStatusIcon(instance.status);
-              const actualParticipantCount = assignedParticipants[instance.id]?.length || 0;
-              const attendancePercentage = (actualParticipantCount / instance.max_participants) * 100;
-              
+              const actualParticipantCount =
+                assignedParticipants[instance.id]?.length || 0;
+              const attendancePercentage =
+                (actualParticipantCount / instance.max_participants) * 100;
+
               return (
-                <Card key={instance.id} className="hover:shadow-lg transition-shadow">
+                <Card
+                  key={instance.id}
+                  className="hover:shadow-lg transition-shadow"
+                >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4 flex-1">
@@ -1111,14 +1578,23 @@ export default function Activities() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2 mb-1">
-                            <h3 className="text-lg font-semibold text-foreground">{instance.activity_name}</h3>
-                            <Badge variant="outline">{instance.booking_reference || 'No Booking'}</Badge>
-                            <Badge variant={getStatusColor(instance.status)}>{instance.status}</Badge>
+                            <h3 className="text-lg font-semibold text-foreground">
+                              {instance.activity_name}
+                            </h3>
+                            <Badge variant="outline">
+                              {instance.booking_reference || "No Booking"}
+                            </Badge>
+                            <Badge variant={getStatusColor(instance.status)}>
+                              {instance.status}
+                            </Badge>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
                             <div className="flex items-center">
                               <Calendar className="mr-1 h-4 w-4" />
-                              {formatDateTime(instance.scheduled_date, instance.scheduled_time)}
+                              {formatDateTime(
+                                instance.scheduled_date,
+                                instance.scheduled_time,
+                              )}
                             </div>
                             {instance.guide_name && (
                               <div className="flex items-center">
@@ -1128,7 +1604,8 @@ export default function Activities() {
                             )}
                             <div className="flex items-center">
                               <Users className="mr-1 h-4 w-4" />
-                              {actualParticipantCount}/{instance.max_participants} participants
+                              {actualParticipantCount}/
+                              {instance.max_participants} participants
                             </div>
                             {instance.weather_conditions && (
                               <div className="flex items-center">
@@ -1137,17 +1614,26 @@ export default function Activities() {
                               </div>
                             )}
                           </div>
-                          {instance.status !== 'completed' && (
+                          {instance.status !== "completed" && (
                             <div className="mt-3">
                               <div className="flex items-center justify-between text-sm mb-1">
-                                <span className="text-muted-foreground">Attendance</span>
-                                <span className="text-muted-foreground">{Math.round(attendancePercentage)}%</span>
+                                <span className="text-muted-foreground">
+                                  Attendance
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {Math.round(attendancePercentage)}%
+                                </span>
                               </div>
-                              <Progress value={attendancePercentage} className="h-2" />
+                              <Progress
+                                value={attendancePercentage}
+                                className="h-2"
+                              />
                             </div>
                           )}
                           {instance.notes && (
-                            <p className="text-sm text-muted-foreground mt-2 italic">{instance.notes}</p>
+                            <p className="text-sm text-muted-foreground mt-2 italic">
+                              {instance.notes}
+                            </p>
                           )}
                         </div>
                         <div className="flex items-center space-x-2">
@@ -1155,6 +1641,7 @@ export default function Activities() {
                             variant="outline"
                             size="sm"
                             onClick={() => openAddParticipants(instance)}
+                            disabled={dbReadOnly}
                           >
                             <UserPlus className="mr-1 h-4 w-4" />
                             Add Participants
@@ -1189,8 +1676,12 @@ export default function Activities() {
             <Card>
               <CardContent className="p-8 text-center">
                 <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No scheduled activities</h3>
-                <p className="text-muted-foreground">No activities match your current filters</p>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  No scheduled activities
+                </h3>
+                <p className="text-muted-foreground">
+                  No activities match your current filters
+                </p>
               </CardContent>
             </Card>
           )}
@@ -1200,7 +1691,10 @@ export default function Activities() {
           {/* Activity Library */}
           <div className="grid gap-4">
             {activities.map((activity) => (
-              <Card key={activity.id} className="hover:shadow-lg transition-shadow">
+              <Card
+                key={activity.id}
+                className="hover:shadow-lg transition-shadow"
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4 flex-1">
@@ -1209,8 +1703,14 @@ export default function Activities() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="text-lg font-semibold text-foreground">{activity.name}</h3>
-                          <Badge variant={getDifficultyColor(activity.difficulty_level)}>
+                          <h3 className="text-lg font-semibold text-foreground">
+                            {activity.name}
+                          </h3>
+                          <Badge
+                            variant={getDifficultyColor(
+                              activity.difficulty_level,
+                            )}
+                          >
                             {activity.difficulty_level}
                           </Badge>
                           {Boolean(activity.weather_dependent) && (
@@ -1220,7 +1720,9 @@ export default function Activities() {
                             <Badge variant="destructive">Inactive</Badge>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">{activity.description}</p>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {activity.description}
+                        </p>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
                           <div className="flex items-center">
                             <MapPin className="mr-1 h-4 w-4" />
@@ -1284,8 +1786,12 @@ export default function Activities() {
             <Card>
               <CardContent className="p-8 text-center">
                 <Mountain className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No activities found</h3>
-                <p className="text-muted-foreground">Create your first activity to get started</p>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  No activities found
+                </h3>
+                <p className="text-muted-foreground">
+                  Create your first activity to get started
+                </p>
               </CardContent>
             </Card>
           )}
@@ -1305,14 +1811,21 @@ export default function Activities() {
                 <Label>Activity Name</Label>
                 <Input
                   value={activityForm.name}
-                  onChange={(e) => setActivityForm({...activityForm, name: e.target.value})}
+                  onChange={(e) =>
+                    setActivityForm({ ...activityForm, name: e.target.value })
+                  }
                 />
               </div>
               <div>
                 <Label>Location</Label>
                 <Input
                   value={activityForm.location}
-                  onChange={(e) => setActivityForm({...activityForm, location: e.target.value})}
+                  onChange={(e) =>
+                    setActivityForm({
+                      ...activityForm,
+                      location: e.target.value,
+                    })
+                  }
                 />
               </div>
             </div>
@@ -1320,7 +1833,12 @@ export default function Activities() {
               <Label>Description</Label>
               <Textarea
                 value={activityForm.description}
-                onChange={(e) => setActivityForm({...activityForm, description: e.target.value})}
+                onChange={(e) =>
+                  setActivityForm({
+                    ...activityForm,
+                    description: e.target.value,
+                  })
+                }
               />
             </div>
             <div className="grid grid-cols-3 gap-4">
@@ -1331,7 +1849,12 @@ export default function Activities() {
                   min="0.5"
                   step="0.5"
                   value={activityForm.duration_hours.toString()}
-                  onChange={(e) => setActivityForm({...activityForm, duration_hours: parseFloat(e.target.value) || 0.5})}
+                  onChange={(e) =>
+                    setActivityForm({
+                      ...activityForm,
+                      duration_hours: parseFloat(e.target.value) || 0.5,
+                    })
+                  }
                 />
               </div>
               <div>
@@ -1340,12 +1863,25 @@ export default function Activities() {
                   type="number"
                   min="1"
                   value={activityForm.max_participants.toString()}
-                  onChange={(e) => setActivityForm({...activityForm, max_participants: parseInt(e.target.value) || 1})}
+                  onChange={(e) =>
+                    setActivityForm({
+                      ...activityForm,
+                      max_participants: parseInt(e.target.value) || 1,
+                    })
+                  }
                 />
               </div>
               <div>
                 <Label>Difficulty Level</Label>
-                <Select value={activityForm.difficulty_level} onValueChange={(value) => setActivityForm({...activityForm, difficulty_level: value})}>
+                <Select
+                  value={activityForm.difficulty_level}
+                  onValueChange={(value) =>
+                    setActivityForm({
+                      ...activityForm,
+                      difficulty_level: value,
+                    })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -1362,7 +1898,12 @@ export default function Activities() {
               <Label>Equipment Required</Label>
               <Input
                 value={activityForm.equipment_required}
-                onChange={(e) => setActivityForm({...activityForm, equipment_required: e.target.value})}
+                onChange={(e) =>
+                  setActivityForm({
+                    ...activityForm,
+                    equipment_required: e.target.value,
+                  })
+                }
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -1370,24 +1911,33 @@ export default function Activities() {
                 type="checkbox"
                 id="edit_weather_dependent"
                 checked={activityForm.weather_dependent}
-                onChange={(e) => setActivityForm({...activityForm, weather_dependent: e.target.checked})}
+                onChange={(e) =>
+                  setActivityForm({
+                    ...activityForm,
+                    weather_dependent: e.target.checked,
+                  })
+                }
               />
               <Label htmlFor="edit_weather_dependent">Weather Dependent</Label>
             </div>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsEditActivityOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditActivityOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleUpdateActivity}>
-                Update Activity
-              </Button>
+              <Button onClick={handleUpdateActivity}>Update Activity</Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Participants Dialog */}
-      <Dialog open={isAddParticipantsOpen} onOpenChange={setIsAddParticipantsOpen}>
+      <Dialog
+        open={isAddParticipantsOpen}
+        onOpenChange={setIsAddParticipantsOpen}
+      >
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>Add Participants</DialogTitle>
@@ -1401,16 +1951,24 @@ export default function Activities() {
             <div className="bg-muted/50 p-4 rounded-lg text-sm">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="font-medium">Activity:</span> {selectedInstance?.activity_name}
+                  <span className="font-medium">Activity:</span>{" "}
+                  {selectedInstance?.activity_name}
                 </div>
                 <div>
-                  <span className="font-medium">Date:</span> {selectedInstance && formatDateTime(selectedInstance.scheduled_date, selectedInstance.scheduled_time)}
+                  <span className="font-medium">Date:</span>{" "}
+                  {selectedInstance &&
+                    formatDateTime(
+                      selectedInstance.scheduled_date,
+                      selectedInstance.scheduled_time,
+                    )}
                 </div>
                 <div>
-                  <span className="font-medium">Guide:</span> {selectedInstance?.guide_name || 'No guide assigned'}
+                  <span className="font-medium">Guide:</span>{" "}
+                  {selectedInstance?.guide_name || "No guide assigned"}
                 </div>
                 <div>
-                  <span className="font-medium">Max Participants:</span> {selectedInstance?.max_participants}
+                  <span className="font-medium">Max Participants:</span>{" "}
+                  {selectedInstance?.max_participants}
                 </div>
               </div>
             </div>
@@ -1436,34 +1994,53 @@ export default function Activities() {
               <TabsContent value="groups" className="mt-4">
                 <div className="space-y-4 max-h-64 overflow-y-auto">
                   {(() => {
-                    const groupedParticipants = availableParticipants.reduce((acc, participant) => {
-                      const groupName = participant.group_name;
-                      if (!acc[groupName]) {
-                        acc[groupName] = [];
-                      }
-                      acc[groupName].push(participant);
-                      return acc;
-                    }, {} as {[key: string]: ActivityParticipant[]});
+                    const groupedParticipants = availableParticipants.reduce(
+                      (acc, participant) => {
+                        const groupName = participant.group_name;
+                        if (!acc[groupName]) {
+                          acc[groupName] = [];
+                        }
+                        acc[groupName].push(participant);
+                        return acc;
+                      },
+                      {} as { [key: string]: ActivityParticipant[] },
+                    );
 
-                    const filteredGroups = Object.entries(groupedParticipants).filter(([groupName, members]) => {
+                    const filteredGroups = Object.entries(
+                      groupedParticipants,
+                    ).filter(([groupName, members]) => {
                       if (!participantSearchTerm) return true;
-                      return groupName.toLowerCase().includes(participantSearchTerm.toLowerCase()) ||
-                             members.some(member =>
-                               `${member.first_name} ${member.last_name}`.toLowerCase().includes(participantSearchTerm.toLowerCase()) ||
-                               member.email.toLowerCase().includes(participantSearchTerm.toLowerCase())
-                             );
+                      return (
+                        groupName
+                          .toLowerCase()
+                          .includes(participantSearchTerm.toLowerCase()) ||
+                        members.some(
+                          (member) =>
+                            `${member.first_name} ${member.last_name}`
+                              .toLowerCase()
+                              .includes(participantSearchTerm.toLowerCase()) ||
+                            member.email
+                              .toLowerCase()
+                              .includes(participantSearchTerm.toLowerCase()),
+                        )
+                      );
                     });
 
                     if (filteredGroups.length === 0) {
                       return (
                         <div className="text-center py-8 text-muted-foreground">
-                          {participantSearchTerm ? 'No matching groups or members found' : 'No groups available'}
+                          {participantSearchTerm
+                            ? "No matching groups or members found"
+                            : "No groups available"}
                         </div>
                       );
                     }
 
                     return filteredGroups.map(([groupName, members]) => (
-                      <div key={`group-container-${groupName}`} className="border rounded-lg p-4">
+                      <div
+                        key={`group-container-${groupName}`}
+                        className="border rounded-lg p-4"
+                      >
                         <div className="flex items-center justify-between mb-3">
                           <Badge variant="secondary" className="font-semibold">
                             {groupName} ({members.length})
@@ -1473,8 +2050,10 @@ export default function Activities() {
                             size="sm"
                             onClick={() => {
                               const newSelected = new Set(selectedParticipants);
-                              const allGroupSelected = members.every(member => selectedParticipants.has(member.id));
-                              members.forEach(member => {
+                              const allGroupSelected = members.every((member) =>
+                                selectedParticipants.has(member.id),
+                              );
+                              members.forEach((member) => {
                                 if (allGroupSelected) {
                                   newSelected.delete(member.id);
                                 } else {
@@ -1484,52 +2063,81 @@ export default function Activities() {
                               setSelectedParticipants(newSelected);
                             }}
                           >
-                            {members.every(member => selectedParticipants.has(member.id)) ?
-                              'Deselect All' : 'Select All'}
+                            {members.every((member) =>
+                              selectedParticipants.has(member.id),
+                            )
+                              ? "Deselect All"
+                              : "Select All"}
                           </Button>
                         </div>
 
                         <div className="space-y-2">
-                          {members.filter(member =>
-                            !participantSearchTerm ||
-                            `${member.first_name} ${member.last_name}`.toLowerCase().includes(participantSearchTerm.toLowerCase()) ||
-                            member.email.toLowerCase().includes(participantSearchTerm.toLowerCase())
-                          ).map((participant) => {
-                            const isAlreadyAssigned = assignedParticipants[selectedInstance?.id || 0]?.some(p => p.id === participant.id) || false;
-                            return (
-                              <label key={`group-member-${participant.id}`} className={`flex items-center space-x-3 p-2 rounded cursor-pointer hover:bg-accent/50 ${isAlreadyAssigned ? 'bg-primary/10 border border-primary/20' : 'bg-accent/30'}`}>
-                                <input
-                                  type="checkbox"
-                                  checked={selectedParticipants.has(participant.id)}
-                                  onChange={(e) => {
-                                    const newSelected = new Set(selectedParticipants);
-                                    if (e.target.checked) {
-                                      newSelected.add(participant.id);
-                                    } else {
-                                      newSelected.delete(participant.id);
-                                    }
-                                    setSelectedParticipants(newSelected);
-                                  }}
-                                  className="h-4 w-4"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center space-x-2">
-                                    <div className="font-medium text-sm">
-                                      {participant.first_name} {participant.last_name}
-                                    </div>
-                                    {isAlreadyAssigned && (
-                                      <Badge variant="secondary" className="text-xs">
-                                        Already Assigned
-                                      </Badge>
+                          {members
+                            .filter(
+                              (member) =>
+                                !participantSearchTerm ||
+                                `${member.first_name} ${member.last_name}`
+                                  .toLowerCase()
+                                  .includes(
+                                    participantSearchTerm.toLowerCase(),
+                                  ) ||
+                                member.email
+                                  .toLowerCase()
+                                  .includes(
+                                    participantSearchTerm.toLowerCase(),
+                                  ),
+                            )
+                            .map((participant) => {
+                              const isAlreadyAssigned =
+                                assignedParticipants[
+                                  selectedInstance?.id || 0
+                                ]?.some((p) => p.id === participant.id) ||
+                                false;
+                              return (
+                                <label
+                                  key={`group-member-${participant.id}`}
+                                  className={`flex items-center space-x-3 p-2 rounded cursor-pointer hover:bg-accent/50 ${isAlreadyAssigned ? "bg-primary/10 border border-primary/20" : "bg-accent/30"}`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedParticipants.has(
+                                      participant.id,
                                     )}
+                                    onChange={(e) => {
+                                      const newSelected = new Set(
+                                        selectedParticipants,
+                                      );
+                                      if (e.target.checked) {
+                                        newSelected.add(participant.id);
+                                      } else {
+                                        newSelected.delete(participant.id);
+                                      }
+                                      setSelectedParticipants(newSelected);
+                                    }}
+                                    className="h-4 w-4"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="font-medium text-sm">
+                                        {participant.first_name}{" "}
+                                        {participant.last_name}
+                                      </div>
+                                      {isAlreadyAssigned && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-xs"
+                                        >
+                                          Already Assigned
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground truncate">
+                                      {participant.email}
+                                    </div>
                                   </div>
-                                  <div className="text-xs text-muted-foreground truncate">
-                                    {participant.email}
-                                  </div>
-                                </div>
-                              </label>
-                            );
-                          })}
+                                </label>
+                              );
+                            })}
                         </div>
                       </div>
                     ));
@@ -1540,24 +2148,38 @@ export default function Activities() {
               <TabsContent value="individuals" className="mt-4">
                 <div className="space-y-3 max-h-64 overflow-y-auto">
                   {(() => {
-                    const filteredGuests = availableGuests.filter(guest => {
+                    const filteredGuests = availableGuests.filter((guest) => {
                       if (!participantSearchTerm) return true;
-                      return `${guest.first_name} ${guest.last_name}`.toLowerCase().includes(participantSearchTerm.toLowerCase()) ||
-                             guest.email.toLowerCase().includes(participantSearchTerm.toLowerCase());
+                      return (
+                        `${guest.first_name} ${guest.last_name}`
+                          .toLowerCase()
+                          .includes(participantSearchTerm.toLowerCase()) ||
+                        guest.email
+                          .toLowerCase()
+                          .includes(participantSearchTerm.toLowerCase())
+                      );
                     });
 
                     if (filteredGuests.length === 0) {
                       return (
                         <div className="text-center py-8 text-muted-foreground">
-                          {participantSearchTerm ? 'No matching individual guests found' : 'No individual guests available'}
+                          {participantSearchTerm
+                            ? "No matching individual guests found"
+                            : "No individual guests available"}
                         </div>
                       );
                     }
 
                     return filteredGuests.map((guest) => {
-                      const isAlreadyAssigned = assignedParticipants[selectedInstance?.id || 0]?.some(p => p.id === guest.id) || false;
+                      const isAlreadyAssigned =
+                        assignedParticipants[selectedInstance?.id || 0]?.some(
+                          (p) => p.id === guest.id,
+                        ) || false;
                       return (
-                        <label key={`individual-guest-${guest.id}`} className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer hover:bg-accent/50 ${isAlreadyAssigned ? 'bg-primary/10 border border-primary/20' : 'border'}`}>
+                        <label
+                          key={`individual-guest-${guest.id}`}
+                          className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer hover:bg-accent/50 ${isAlreadyAssigned ? "bg-primary/10 border border-primary/20" : "border"}`}
+                        >
                           <input
                             type="checkbox"
                             checked={selectedParticipants.has(guest.id)}
@@ -1592,7 +2214,10 @@ export default function Activities() {
                               </div>
                             )}
                           </div>
-                          <Badge variant="outline" className="text-xs flex-shrink-0">
+                          <Badge
+                            variant="outline"
+                            className="text-xs flex-shrink-0"
+                          >
                             Individual
                           </Badge>
                         </label>
@@ -1610,7 +2235,10 @@ export default function Activities() {
               {selectedParticipants.size} participants selected
             </div>
             <div className="flex space-x-2">
-              <Button variant="outline" onClick={() => setIsAddParticipantsOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsAddParticipantsOpen(false)}
+              >
                 Cancel
               </Button>
               <Button
@@ -1632,7 +2260,8 @@ export default function Activities() {
               <div>
                 <DialogTitle>Activity Participants</DialogTitle>
                 <DialogDescription>
-                  View all participants for {selectedInstanceForView?.activity_name}
+                  View all participants for{" "}
+                  {selectedInstanceForView?.activity_name}
                 </DialogDescription>
               </div>
               <Button
@@ -1652,26 +2281,43 @@ export default function Activities() {
             <div className="bg-muted/50 p-4 rounded-lg text-sm">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="font-medium">Activity:</span> {selectedInstanceForView?.activity_name}
+                  <span className="font-medium">Activity:</span>{" "}
+                  {selectedInstanceForView?.activity_name}
                 </div>
                 <div>
-                  <span className="font-medium">Date:</span> {selectedInstanceForView && formatDateTime(selectedInstanceForView.scheduled_date, selectedInstanceForView.scheduled_time)}
+                  <span className="font-medium">Date:</span>{" "}
+                  {selectedInstanceForView &&
+                    formatDateTime(
+                      selectedInstanceForView.scheduled_date,
+                      selectedInstanceForView.scheduled_time,
+                    )}
                 </div>
                 <div>
-                  <span className="font-medium">Guide:</span> {selectedInstanceForView?.guide_name || 'No guide assigned'}
+                  <span className="font-medium">Guide:</span>{" "}
+                  {selectedInstanceForView?.guide_name || "No guide assigned"}
                 </div>
                 <div className="col-span-2 flex items-center justify-between pt-2 border-t">
                   <div>
                     <span className="font-medium">Status:</span>
-                    <Badge variant={getStatusColor(selectedInstanceForView?.status || 'scheduled')} className="ml-2">
+                    <Badge
+                      variant={getStatusColor(
+                        selectedInstanceForView?.status || "scheduled",
+                      )}
+                      className="ml-2"
+                    >
                       {selectedInstanceForView?.status}
                     </Badge>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs text-muted-foreground">Change status:</span>
+                    <span className="text-xs text-muted-foreground">
+                      Change status:
+                    </span>
                     <Select
-                      value={selectedInstanceForView?.status || 'scheduled'}
-                      onValueChange={(value) => selectedInstanceForView && handleStatusChange(selectedInstanceForView.id, value)}
+                      value={selectedInstanceForView?.status || "scheduled"}
+                      onValueChange={(value) =>
+                        selectedInstanceForView &&
+                        handleStatusChange(selectedInstanceForView.id, value)
+                      }
                     >
                       <SelectTrigger className="w-[130px]">
                         <SelectValue />
@@ -1694,47 +2340,72 @@ export default function Activities() {
 
             {/* Participants List */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Participants ({assignedParticipants[selectedInstanceForView?.id || 0]?.length || 0})</h3>
+              <h3 className="font-semibold text-lg">
+                Participants (
+                {assignedParticipants[selectedInstanceForView?.id || 0]
+                  ?.length || 0}
+                )
+              </h3>
 
               {(() => {
-                const participants = assignedParticipants[selectedInstanceForView?.id || 0] || [];
+                const participants =
+                  assignedParticipants[selectedInstanceForView?.id || 0] || [];
 
                 if (participants.length === 0) {
                   return (
                     <div className="text-center py-8 text-muted-foreground">
                       <Users className="mx-auto h-12 w-12 mb-4" />
                       <p>No participants assigned to this activity yet.</p>
-                      <p className="text-sm">Use "Add Participants" to assign people to this activity.</p>
+                      <p className="text-sm">
+                        Use "Add Participants" to assign people to this
+                        activity.
+                      </p>
                     </div>
                   );
                 }
 
                 // Group participants by group name
-                const groupedParticipants = participants.reduce((acc, participant) => {
-                  const groupName = participant.group_name || 'Individual Guest';
-                  if (!acc[groupName]) {
-                    acc[groupName] = [];
-                  }
-                  acc[groupName].push(participant);
-                  return acc;
-                }, {} as {[key: string]: AssignedParticipant[]});
+                const groupedParticipants = participants.reduce(
+                  (acc, participant) => {
+                    const groupName =
+                      participant.group_name || "Individual Guest";
+                    if (!acc[groupName]) {
+                      acc[groupName] = [];
+                    }
+                    acc[groupName].push(participant);
+                    return acc;
+                  },
+                  {} as { [key: string]: AssignedParticipant[] },
+                );
 
                 // Sort groups and participants within groups
-                const sortedGroups: [string, AssignedParticipant[]][] = Object.entries(groupedParticipants)
-                  .sort(([a], [b]) => a.localeCompare(b))
-                  .map(([groupName, members]) => [
-                    groupName,
-                    members.sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`))
-                  ]);
+                const sortedGroups: [string, AssignedParticipant[]][] =
+                  Object.entries(groupedParticipants)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([groupName, members]) => [
+                      groupName,
+                      members.sort((a, b) =>
+                        `${a.first_name} ${a.last_name}`.localeCompare(
+                          `${b.first_name} ${b.last_name}`,
+                        ),
+                      ),
+                    ]);
 
                 return (
                   <div className="space-y-4">
                     {sortedGroups.map(([groupName, members]) => {
                       return (
-                        <div key={`view-group-${groupName}`} className="border rounded-lg p-4">
+                        <div
+                          key={`view-group-${groupName}`}
+                          className="border rounded-lg p-4"
+                        >
                           <div className="flex items-center mb-3">
-                            <Badge variant="secondary" className="font-semibold">
-                              {groupName} ({(members as AssignedParticipant[]).length})
+                            <Badge
+                              variant="secondary"
+                              className="font-semibold"
+                            >
+                              {groupName} (
+                              {(members as AssignedParticipant[]).length})
                             </Badge>
                           </div>
 
@@ -1744,13 +2415,23 @@ export default function Activities() {
                             <div>Signature</div>
                           </div>
                           <div className="space-y-2">
-                            {(members as AssignedParticipant[]).map((participant, index) => (
-                              <div key={`view-participant-${participant.id}-${index}`} className="grid grid-cols-3 gap-2 text-base items-center">
-                                <div>{participant.first_name} {participant.last_name}</div>
-                                <div className="text-sm text-muted-foreground">{participant.email}</div>
-                                <div className="border-b border-gray-300 h-6"></div>
-                              </div>
-                            ))}
+                            {(members as AssignedParticipant[]).map(
+                              (participant, index) => (
+                                <div
+                                  key={`view-participant-${participant.id}-${index}`}
+                                  className="grid grid-cols-3 gap-2 text-base items-center"
+                                >
+                                  <div>
+                                    {participant.first_name}{" "}
+                                    {participant.last_name}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {participant.email}
+                                  </div>
+                                  <div className="border-b border-gray-300 h-6"></div>
+                                </div>
+                              ),
+                            )}
                           </div>
                         </div>
                       );
@@ -1763,9 +2444,7 @@ export default function Activities() {
 
           {/* Footer */}
           <div className="flex-shrink-0 flex justify-end pt-4 border-t">
-            <Button onClick={() => setIsViewActivityOpen(false)}>
-              Close
-            </Button>
+            <Button onClick={() => setIsViewActivityOpen(false)}>Close</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1779,7 +2458,8 @@ export default function Activities() {
               <span>Delete Activity</span>
             </DialogTitle>
             <DialogDescription>
-              This action cannot be undone. This will permanently delete the activity and remove all participant assignments.
+              This action cannot be undone. This will permanently delete the
+              activity and remove all participant assignments.
             </DialogDescription>
           </DialogHeader>
 
@@ -1788,16 +2468,23 @@ export default function Activities() {
               <div className="bg-muted/50 p-4 rounded-lg">
                 <div className="space-y-2 text-sm">
                   <div>
-                    <span className="font-medium">Activity:</span> {activityToDelete.activity_name}
+                    <span className="font-medium">Activity:</span>{" "}
+                    {activityToDelete.activity_name}
                   </div>
                   <div>
-                    <span className="font-medium">Date:</span> {formatDateTime(activityToDelete.scheduled_date, activityToDelete.scheduled_time)}
+                    <span className="font-medium">Date:</span>{" "}
+                    {formatDateTime(
+                      activityToDelete.scheduled_date,
+                      activityToDelete.scheduled_time,
+                    )}
                   </div>
                   <div>
-                    <span className="font-medium">Guide:</span> {activityToDelete.guide_name || 'No guide assigned'}
+                    <span className="font-medium">Guide:</span>{" "}
+                    {activityToDelete.guide_name || "No guide assigned"}
                   </div>
                   <div>
-                    <span className="font-medium">Participants:</span> {assignedParticipants[activityToDelete.id]?.length || 0}
+                    <span className="font-medium">Participants:</span>{" "}
+                    {assignedParticipants[activityToDelete.id]?.length || 0}
                   </div>
                 </div>
               </div>
@@ -1808,8 +2495,9 @@ export default function Activities() {
                   <div className="text-sm">
                     <p className="font-medium text-destructive">Warning!</p>
                     <p className="text-muted-foreground">
-                      Deleting this activity will also remove all {assignedParticipants[activityToDelete.id]?.length || 0} participant assignments.
-                      This action cannot be undone.
+                      Deleting this activity will also remove all{" "}
+                      {assignedParticipants[activityToDelete.id]?.length || 0}{" "}
+                      participant assignments. This action cannot be undone.
                     </p>
                   </div>
                 </div>
@@ -1818,7 +2506,10 @@ export default function Activities() {
           )}
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -1834,7 +2525,10 @@ export default function Activities() {
       </Dialog>
 
       {/* Delete Activity from Library Confirmation Dialog */}
-      <Dialog open={isDeleteActivityDialogOpen} onOpenChange={setIsDeleteActivityDialogOpen}>
+      <Dialog
+        open={isDeleteActivityDialogOpen}
+        onOpenChange={setIsDeleteActivityDialogOpen}
+      >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
@@ -1842,7 +2536,8 @@ export default function Activities() {
               <span>Delete Activity</span>
             </DialogTitle>
             <DialogDescription>
-              This action cannot be undone. This will permanently delete the activity from your library and all its scheduled instances.
+              This action cannot be undone. This will permanently delete the
+              activity from your library and all its scheduled instances.
             </DialogDescription>
           </DialogHeader>
 
@@ -1851,19 +2546,24 @@ export default function Activities() {
               <div className="bg-muted/50 p-4 rounded-lg">
                 <div className="space-y-2 text-sm">
                   <div>
-                    <span className="font-medium">Activity:</span> {activityLibraryToDelete.name}
+                    <span className="font-medium">Activity:</span>{" "}
+                    {activityLibraryToDelete.name}
                   </div>
                   <div>
-                    <span className="font-medium">Location:</span> {activityLibraryToDelete.location}
+                    <span className="font-medium">Location:</span>{" "}
+                    {activityLibraryToDelete.location}
                   </div>
                   <div>
-                    <span className="font-medium">Duration:</span> {activityLibraryToDelete.duration_hours}h
+                    <span className="font-medium">Duration:</span>{" "}
+                    {activityLibraryToDelete.duration_hours}h
                   </div>
                   <div>
-                    <span className="font-medium">Max Participants:</span> {activityLibraryToDelete.max_participants}
+                    <span className="font-medium">Max Participants:</span>{" "}
+                    {activityLibraryToDelete.max_participants}
                   </div>
                   <div>
-                    <span className="font-medium">Difficulty:</span> {activityLibraryToDelete.difficulty_level}
+                    <span className="font-medium">Difficulty:</span>{" "}
+                    {activityLibraryToDelete.difficulty_level}
                   </div>
                 </div>
               </div>
@@ -1874,8 +2574,9 @@ export default function Activities() {
                   <div className="text-sm">
                     <p className="font-medium text-destructive">Warning!</p>
                     <p className="text-muted-foreground">
-                      Deleting this activity will also remove all scheduled instances and their participant assignments.
-                      This action cannot be undone.
+                      Deleting this activity will also remove all scheduled
+                      instances and their participant assignments. This action
+                      cannot be undone.
                     </p>
                   </div>
                 </div>
@@ -1884,7 +2585,10 @@ export default function Activities() {
           )}
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={() => setIsDeleteActivityDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteActivityDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button

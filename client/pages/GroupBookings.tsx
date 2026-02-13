@@ -1,11 +1,30 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -24,7 +43,7 @@ import {
   MapPin,
   Plane,
   Clock,
-  Printer
+  Printer,
 } from "lucide-react";
 
 interface GroupMember {
@@ -49,6 +68,18 @@ interface GroupMember {
   departure_flight_time?: string;
   departure_notes?: string;
   is_leader?: boolean;
+}
+
+interface GroupBookingSummary {
+  id: number;
+  booking_reference: string;
+  invoice_number?: string;
+  guest_name: string;
+  tour_name: string;
+  start_date?: string;
+  end_date?: string;
+  status: string;
+  payment_status?: string;
 }
 
 interface TourGroup {
@@ -87,8 +118,12 @@ export default function GroupBookings() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [groupIdFilter, setGroupIdFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<TourGroup | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<
+    (TourGroup & { bookings?: GroupBookingSummary[] }) | null
+  >(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -118,7 +153,7 @@ export default function GroupBookings() {
     amount_paid: 0,
     deposit_amount: 0,
     special_requirements: "",
-    group_notes: ""
+    group_notes: "",
   });
 
   // Group members state
@@ -143,8 +178,8 @@ export default function GroupBookings() {
       departure_flight_number: "",
       departure_flight_time: "",
       departure_notes: "",
-      is_leader: true
-    }
+      is_leader: true,
+    },
   ]);
 
   useEffect(() => {
@@ -153,12 +188,16 @@ export default function GroupBookings() {
 
   const fetchGroups = async () => {
     try {
-      const response = await fetch('/api/groups');
+      const response = await fetch("/api/groups");
       if (response.ok) {
         const data = await response.json();
         setGroups(data);
       } else {
-        console.error('Failed to fetch groups:', response.status, response.statusText);
+        console.error(
+          "Failed to fetch groups:",
+          response.status,
+          response.statusText,
+        );
         setGroups([]);
         toast({
           title: "Failed to Load Groups",
@@ -167,11 +206,12 @@ export default function GroupBookings() {
         });
       }
     } catch (error) {
-      console.error('Error fetching groups:', error);
+      console.error("Error fetching groups:", error);
       setGroups([]);
       toast({
         title: "Connection Error",
-        description: "Unable to connect to the server. Please check your connection and try again.",
+        description:
+          "Unable to connect to the server. Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {
@@ -180,35 +220,38 @@ export default function GroupBookings() {
   };
 
   const addMember = () => {
-    setGroupMembers([...groupMembers, {
-      first_name: "",
-      last_name: "",
-      email: "",
-      phone: "",
-      passport_number: "",
-      nationality: "",
-      date_of_birth: "",
-      dietary_restrictions: "",
-      emergency_contact_name: "",
-      emergency_contact_phone: "",
-      notes: "",
-      arrival_date: "",
-      departure_date: "",
-      arrival_flight_number: "",
-      arrival_flight_time: "",
-      arrival_notes: "",
-      departure_flight_number: "",
-      departure_flight_time: "",
-      departure_notes: "",
-      is_leader: false
-    }]);
+    setGroupMembers([
+      ...groupMembers,
+      {
+        first_name: "",
+        last_name: "",
+        email: "",
+        phone: "",
+        passport_number: "",
+        nationality: "",
+        date_of_birth: "",
+        dietary_restrictions: "",
+        emergency_contact_name: "",
+        emergency_contact_phone: "",
+        notes: "",
+        arrival_date: "",
+        departure_date: "",
+        arrival_flight_number: "",
+        arrival_flight_time: "",
+        arrival_notes: "",
+        departure_flight_number: "",
+        departure_flight_time: "",
+        departure_notes: "",
+        is_leader: false,
+      },
+    ]);
   };
 
   const removeMember = (index: number) => {
     if (groupMembers.length > 1) {
       const updatedMembers = groupMembers.filter((_, i) => i !== index);
       // Ensure at least one leader exists
-      const hasLeader = updatedMembers.some(m => m.is_leader);
+      const hasLeader = updatedMembers.some((m) => m.is_leader);
       if (!hasLeader && updatedMembers.length > 0) {
         updatedMembers[0].is_leader = true;
       }
@@ -220,11 +263,11 @@ export default function GroupBookings() {
     const updatedMembers = [...groupMembers];
     updatedMembers[index] = {
       ...updatedMembers[index],
-      [field]: value
+      [field]: value,
     };
 
     // If setting someone as leader, remove leader status from others
-    if (field === 'is_leader' && value) {
+    if (field === "is_leader" && value) {
       updatedMembers.forEach((member, i) => {
         if (i !== index) {
           member.is_leader = false;
@@ -243,35 +286,35 @@ export default function GroupBookings() {
 
     // Validation
     if (!newGroup.group_name.trim()) {
-      alert('Please enter a group name');
+      alert("Please enter a group name");
       return;
     }
 
-    const validMembers = groupMembers.filter(m =>
-      m.first_name.trim() && m.last_name.trim() && m.email.trim()
+    const validMembers = groupMembers.filter(
+      (m) => m.first_name.trim() && m.last_name.trim() && m.email.trim(),
     );
 
     if (validMembers.length === 0) {
-      alert('Please add at least one member with complete information');
+      alert("Please add at least one member with complete information");
       return;
     }
 
     // Ensure at least one leader
-    const hasLeader = validMembers.some(m => m.is_leader);
+    const hasLeader = validMembers.some((m) => m.is_leader);
     if (!hasLeader) {
       validMembers[0].is_leader = true;
     }
 
     setIsCreating(true);
     try {
-      const response = await fetch('/api/groups', {
-        method: 'POST',
+      const response = await fetch("/api/groups", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...newGroup,
-          members: validMembers
+          members: validMembers,
         }),
       });
 
@@ -292,11 +335,14 @@ export default function GroupBookings() {
           description: `"${newGroup.group_name}" has been created with ${validMembers.length} member(s). Transport schedules have been automatically created based on flight details.`,
         });
       } else {
-        const errorMessage = data?.error || data?.message || `${response.status}: ${response.statusText}`;
+        const errorMessage =
+          data?.error ||
+          data?.message ||
+          `${response.status}: ${response.statusText}`;
         throw new Error(errorMessage);
       }
     } catch (error) {
-      console.error('Error creating group:', error);
+      console.error("Error creating group:", error);
       toast({
         title: "Error Creating Group",
         description: error.message,
@@ -328,8 +374,8 @@ export default function GroupBookings() {
     }
 
     // Validate members
-    const validMembers = groupMembers.filter(m =>
-      m.first_name.trim() && m.last_name.trim() && m.email.trim()
+    const validMembers = groupMembers.filter(
+      (m) => m.first_name.trim() && m.last_name.trim() && m.email.trim(),
     );
 
     if (validMembers.length === 0) {
@@ -342,7 +388,7 @@ export default function GroupBookings() {
     }
 
     // Ensure at least one leader
-    const hasLeader = validMembers.some(m => m.is_leader);
+    const hasLeader = validMembers.some((m) => m.is_leader);
     if (!hasLeader) {
       validMembers[0].is_leader = true;
     }
@@ -350,13 +396,13 @@ export default function GroupBookings() {
     setIsCreating(true);
     try {
       const response = await fetch(`/api/groups/${groupId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...newGroup,
-          members: validMembers
+          members: validMembers,
         }),
       });
 
@@ -378,11 +424,14 @@ export default function GroupBookings() {
           description: `"${newGroup.group_name}" has been updated with ${validMembers.length} member(s). Transport schedules have been automatically updated based on flight details.`,
         });
       } else {
-        const errorMessage = data?.error || data?.message || `${response.status}: ${response.statusText}`;
+        const errorMessage =
+          data?.error ||
+          data?.message ||
+          `${response.status}: ${response.statusText}`;
         throw new Error(errorMessage);
       }
     } catch (error) {
-      console.error('Error updating group:', error);
+      console.error("Error updating group:", error);
       toast({
         title: "Error Updating Group",
         description: error.message,
@@ -412,33 +461,37 @@ export default function GroupBookings() {
       amount_paid: 0,
       deposit_amount: 0,
       special_requirements: "",
-      group_notes: ""
+      group_notes: "",
     });
-    setGroupMembers([{
-      first_name: "",
-      last_name: "",
-      email: "",
-      phone: "",
-      passport_number: "",
-      nationality: "",
-      date_of_birth: "",
-      dietary_restrictions: "",
-      emergency_contact_name: "",
-      emergency_contact_phone: "",
-      notes: "",
-      arrival_date: "",
-      departure_date: "",
-      arrival_flight_number: "",
-      arrival_flight_time: "",
-      arrival_notes: "",
-      departure_flight_number: "",
-      departure_flight_time: "",
-      departure_notes: "",
-      is_leader: true
-    }]);
+    setGroupMembers([
+      {
+        first_name: "",
+        last_name: "",
+        email: "",
+        phone: "",
+        passport_number: "",
+        nationality: "",
+        date_of_birth: "",
+        dietary_restrictions: "",
+        emergency_contact_name: "",
+        emergency_contact_phone: "",
+        notes: "",
+        arrival_date: "",
+        departure_date: "",
+        arrival_flight_number: "",
+        arrival_flight_time: "",
+        arrival_notes: "",
+        departure_flight_number: "",
+        departure_flight_time: "",
+        departure_notes: "",
+        is_leader: true,
+      },
+    ]);
   };
 
-  const fetchGroupWithMembers = async (groupId: number): Promise<TourGroup | null> => {
+  const fetchGroupWithMembers = async (
+    groupId: number,
+  ): Promise<(TourGroup & { bookings?: GroupBookingSummary[] }) | null> => {
     try {
       const response = await fetch(`/api/groups/${groupId}`);
       if (response.ok) {
@@ -447,7 +500,7 @@ export default function GroupBookings() {
       }
       return null;
     } catch (error) {
-      console.error('Error fetching group details:', error);
+      console.error("Error fetching group details:", error);
       return null;
     }
   };
@@ -466,18 +519,21 @@ export default function GroupBookings() {
       departure_flight_number: group.departure_flight_number || "",
       departure_flight_time: group.departure_flight_time || "",
       departure_notes: group.departure_notes || "",
-      traveling_together: group.traveling_together !== undefined ? group.traveling_together : true,
+      traveling_together:
+        group.traveling_together !== undefined
+          ? group.traveling_together
+          : true,
       total_cost: group.total_cost || 0,
       amount_paid: group.amount_paid || 0,
       deposit_amount: group.deposit_amount || 0,
       special_requirements: group.special_requirements || "",
-      group_notes: group.group_notes || ""
+      group_notes: group.group_notes || "",
     });
 
     // Fetch detailed group data with members
     const groupWithMembers = await fetchGroupWithMembers(group.id);
     if (groupWithMembers && groupWithMembers.members) {
-      const formattedMembers = groupWithMembers.members.map(member => ({
+      const formattedMembers = groupWithMembers.members.map((member) => ({
         id: member.id,
         first_name: member.first_name || "",
         last_name: member.last_name || "",
@@ -498,58 +554,68 @@ export default function GroupBookings() {
         departure_flight_number: member.departure_flight_number || "",
         departure_flight_time: member.departure_flight_time || "",
         departure_notes: member.departure_notes || "",
-        is_leader: member.is_leader || false
+        is_leader: member.is_leader || false,
       }));
       setGroupMembers(formattedMembers);
     } else {
       // Fallback if no members found
-      setGroupMembers([{
-        first_name: "",
-        last_name: "",
-        email: "",
-        phone: "",
-        passport_number: "",
-        nationality: "",
-        date_of_birth: "",
-        dietary_restrictions: "",
-        emergency_contact_name: "",
-        emergency_contact_phone: "",
-        notes: "",
-        arrival_date: "",
-        departure_date: "",
-        arrival_flight_number: "",
-        arrival_flight_time: "",
-        arrival_notes: "",
-        departure_flight_number: "",
-        departure_flight_time: "",
-        departure_notes: "",
-        is_leader: true
-      }]);
+      setGroupMembers([
+        {
+          first_name: "",
+          last_name: "",
+          email: "",
+          phone: "",
+          passport_number: "",
+          nationality: "",
+          date_of_birth: "",
+          dietary_restrictions: "",
+          emergency_contact_name: "",
+          emergency_contact_phone: "",
+          notes: "",
+          arrival_date: "",
+          departure_date: "",
+          arrival_flight_number: "",
+          arrival_flight_time: "",
+          arrival_notes: "",
+          departure_flight_number: "",
+          departure_flight_time: "",
+          departure_notes: "",
+          is_leader: true,
+        },
+      ]);
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'default';
-      case 'completed': return 'secondary';
-      case 'cancelled': return 'destructive';
-      default: return 'outline';
+      case "active":
+        return "default";
+      case "completed":
+        return "secondary";
+      case "cancelled":
+        return "destructive";
+      default:
+        return "outline";
     }
   };
 
   const getGroupTypeColor = (type: string) => {
     switch (type) {
-      case 'family': return 'default';
-      case 'corporate': return 'secondary';
-      case 'friends': return 'outline';
-      default: return 'outline';
+      case "family":
+        return "default";
+      case "corporate":
+        return "secondary";
+      case "friends":
+        return "outline";
+      default:
+        return "outline";
     }
   };
 
   const deleteGroup = async (groupId: number) => {
     try {
       const response = await fetch(`/api/groups/${groupId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (response.ok) {
@@ -558,13 +624,14 @@ export default function GroupBookings() {
         setDeletingGroup(null);
         toast({
           title: "Group Deleted Successfully!",
-          description: "The group booking and all its members have been removed.",
+          description:
+            "The group booking and all its members have been removed.",
         });
       } else {
-        throw new Error('Failed to delete group');
+        throw new Error("Failed to delete group");
       }
     } catch (error) {
-      console.error('Error deleting group:', error);
+      console.error("Error deleting group:", error);
       toast({
         title: "Error Deleting Group",
         description: "An error occurred while deleting the group.",
@@ -576,15 +643,15 @@ export default function GroupBookings() {
   const cancelReservation = async (groupId: number, refundAmount: number) => {
     try {
       const response = await fetch(`/api/groups/${groupId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...newGroup,
-          status: 'cancelled',
+          status: "cancelled",
           refund_amount: refundAmount,
-          cancelled_at: new Date().toISOString()
+          cancelled_at: new Date().toISOString(),
         }),
       });
 
@@ -600,10 +667,10 @@ export default function GroupBookings() {
           description: `Group cancelled successfully. Refund amount: $${refundAmount.toFixed(2)}`,
         });
       } else {
-        throw new Error('Failed to cancel reservation');
+        throw new Error("Failed to cancel reservation");
       }
     } catch (error) {
-      console.error('Error cancelling reservation:', error);
+      console.error("Error cancelling reservation:", error);
       toast({
         title: "Error Cancelling Reservation",
         description: "An error occurred while cancelling the reservation.",
@@ -612,11 +679,13 @@ export default function GroupBookings() {
     }
   };
 
-  const handlePrintGroup = (group: TourGroup | null) => {
+  const handlePrintGroup = (
+    group: (TourGroup & { bookings?: GroupBookingSummary[] }) | null,
+  ) => {
     if (!group) return;
 
     // Create a new window for printing
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
     // Generate the print HTML content
@@ -783,6 +852,10 @@ export default function GroupBookings() {
 
           <div class="info-grid">
             <div class="info-item">
+              <span class="info-label">Group ID:</span>
+              <span class="info-value">${group.id}</span>
+            </div>
+            <div class="info-item">
               <span class="info-label">Status:</span>
               <span class="info-value">
                 <span class="badge badge-${group.status}">${group.status.toUpperCase()}</span>
@@ -804,157 +877,275 @@ export default function GroupBookings() {
             </div>
           </div>
 
-          ${group.tour_start_date || group.tour_end_date ? `
+          ${
+            group.tour_start_date || group.tour_end_date
+              ? `
             <div class="section">
               <div class="section-title">📅 Tour Duration</div>
               <div class="info-grid">
-                ${group.tour_start_date ? `
+                ${
+                  group.tour_start_date
+                    ? `
                   <div class="info-item">
                     <span class="info-label">Tour Start Date:</span>
                     <span class="info-value">${new Date(group.tour_start_date).toLocaleDateString()}</span>
                   </div>
-                ` : ''}
-                ${group.tour_end_date ? `
+                `
+                    : ""
+                }
+                ${
+                  group.tour_end_date
+                    ? `
                   <div class="info-item">
                     <span class="info-label">Tour End Date:</span>
                     <span class="info-value">${new Date(group.tour_end_date).toLocaleDateString()}</span>
                   </div>
-                ` : ''}
+                `
+                    : ""
+                }
               </div>
             </div>
-          ` : ''}
+          `
+              : ""
+          }
 
           <div class="section">
             <div class="section-title">👑 Group Leader</div>
             <div class="info-grid">
-              ${group.leader_name ? `
+              ${
+                group.leader_name
+                  ? `
                 <div class="info-item">
                   <span class="info-label">Name:</span>
                   <span class="info-value">${group.leader_name}</span>
                 </div>
-              ` : ''}
-              ${group.leader_email ? `
+              `
+                  : ""
+              }
+              ${
+                group.leader_email
+                  ? `
                 <div class="info-item">
                   <span class="info-label">Email:</span>
                   <span class="info-value">${group.leader_email}</span>
                 </div>
-              ` : ''}
-              ${group.leader_phone ? `
+              `
+                  : ""
+              }
+              ${
+                group.leader_phone
+                  ? `
                 <div class="info-item">
                   <span class="info-label">Phone:</span>
                   <span class="info-value">${group.leader_phone}</span>
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
             </div>
           </div>
 
-          ${group.traveling_together && (group.arrival_date || group.departure_date) ? `
+          ${
+            group.traveling_together &&
+            (group.arrival_date || group.departure_date)
+              ? `
             <div class="section">
               <div class="section-title">📅 Group Travel Dates</div>
               <div class="info-grid">
-                ${group.arrival_date ? `
+                ${
+                  group.arrival_date
+                    ? `
                   <div class="info-item">
                     <span class="info-label">Group Arrival:</span>
                     <span class="info-value">${new Date(group.arrival_date).toLocaleDateString()}</span>
                   </div>
-                ` : ''}
-                ${group.departure_date ? `
+                `
+                    : ""
+                }
+                ${
+                  group.departure_date
+                    ? `
                   <div class="info-item">
                     <span class="info-label">Group Departure:</span>
                     <span class="info-value">${new Date(group.departure_date).toLocaleDateString()}</span>
                   </div>
-                ` : ''}
+                `
+                    : ""
+                }
               </div>
             </div>
-          ` : ''}
+          `
+              : ""
+          }
 
-          ${group.traveling_together && (group.arrival_flight_number || group.departure_flight_number) ? `
+          ${
+            group.traveling_together &&
+            (group.arrival_flight_number || group.departure_flight_number)
+              ? `
             <div class="section">
               <div class="section-title">✈️ Flight Information</div>
               <div class="info-grid">
-                ${group.arrival_flight_number ? `
+                ${
+                  group.arrival_flight_number
+                    ? `
                   <div class="info-item">
                     <span class="info-label">Arrival Flight:</span>
                     <span class="info-value">
-                      <div class="flight-info">✈️ ${group.arrival_flight_number} ${group.arrival_flight_time ? `at ${group.arrival_flight_time}` : ''}</div>
-                      ${group.arrival_notes ? `<div style="font-size: 12px; color: #666;">Notes: ${group.arrival_notes}</div>` : ''}
+                      <div class="flight-info">✈️ ${group.arrival_flight_number} ${group.arrival_flight_time ? `at ${group.arrival_flight_time}` : ""}</div>
+                      ${group.arrival_notes ? `<div style="font-size: 12px; color: #666;">Notes: ${group.arrival_notes}</div>` : ""}
                     </span>
                   </div>
-                ` : ''}
-                ${group.departure_flight_number ? `
+                `
+                    : ""
+                }
+                ${
+                  group.departure_flight_number
+                    ? `
                   <div class="info-item">
                     <span class="info-label">Departure Flight:</span>
                     <span class="info-value">
-                      <div class="flight-info">🛫 ${group.departure_flight_number} ${group.departure_flight_time ? `at ${group.departure_flight_time}` : ''}</div>
-                      ${group.departure_notes ? `<div style="font-size: 12px; color: #666;">Notes: ${group.departure_notes}</div>` : ''}
+                      <div class="flight-info">🛫 ${group.departure_flight_number} ${group.departure_flight_time ? `at ${group.departure_flight_time}` : ""}</div>
+                      ${group.departure_notes ? `<div style="font-size: 12px; color: #666;">Notes: ${group.departure_notes}</div>` : ""}
                     </span>
                   </div>
-                ` : ''}
+                `
+                    : ""
+                }
               </div>
             </div>
-          ` : ''}
+          `
+              : ""
+          }
 
-          ${!group.traveling_together ? `
+          ${
+            !group.traveling_together
+              ? `
             <div class="section">
               <div class="section-title">🚶 Travel Arrangements</div>
               <div class="notes-box">
                 Group members are travelling separately with individual flight arrangements.
               </div>
             </div>
-          ` : ''}
+          `
+              : ""
+          }
 
-          ${group.members && group.members.length > 0 ? `
+          ${
+            group.bookings && group.bookings.length > 0
+              ? `
+            <div class="section">
+              <div class="section-title">📄 Bookings</div>
+              <div class="info-grid">
+                ${group.bookings
+                  .map(
+                    (b) => `
+                  <div class="info-item">
+                    <span class="info-label">Invoice #:</span>
+                    <span class="info-value">${b.invoice_number || ""}</span>
+                    <div class="info-value">Ref: ${b.booking_reference || ""}</div>
+                    <div class="info-value">Guest: ${b.guest_name || ""}</div>
+                    <div class="info-value">Tour: ${b.tour_name || ""}</div>
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+            </div>
+          `
+              : ""
+          }
+
+          ${
+            group.members && group.members.length > 0
+              ? `
             <div class="section">
               <div class="section-title">👥 Group Members (${group.members.length})</div>
-              ${group.members.map(member => `
+              ${group.members
+                .map(
+                  (member) => `
                 <div class="member-card">
                   <div class="member-header">
                     ${member.first_name} ${member.last_name}
-                    ${member.is_leader ? '<span class="leader-badge">Leader</span>' : ''}
+                    ${member.is_leader ? '<span class="leader-badge">Leader</span>' : ""}
                   </div>
                   <div class="info-grid">
-                    ${member.email ? `
+                    ${
+                      member.email
+                        ? `
                       <div class="info-item">
                         <span class="info-label">Email:</span>
                         <span class="info-value">${member.email}</span>
                       </div>
-                    ` : ''}
-                    ${member.phone ? `
+                    `
+                        : ""
+                    }
+                    ${
+                      member.phone
+                        ? `
                       <div class="info-item">
                         <span class="info-label">Phone:</span>
                         <span class="info-value">${member.phone}</span>
                       </div>
-                    ` : ''}
-                    ${member.nationality ? `
+                    `
+                        : ""
+                    }
+                    ${
+                      member.nationality
+                        ? `
                       <div class="info-item">
                         <span class="info-label">Nationality:</span>
                         <span class="info-value">${member.nationality}</span>
                       </div>
-                    ` : ''}
-                    ${member.dietary_restrictions ? `
+                    `
+                        : ""
+                    }
+                    ${
+                      member.dietary_restrictions
+                        ? `
                       <div class="info-item">
                         <span class="info-label">Dietary Restrictions:</span>
                         <span class="info-value">${member.dietary_restrictions}</span>
                       </div>
-                    ` : ''}
+                    `
+                        : ""
+                    }
                   </div>
-                  ${member.arrival_flight_number || member.departure_flight_number ? `
+                  ${
+                    member.arrival_flight_number ||
+                    member.departure_flight_number
+                      ? `
                     <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e5e7eb;">
                       <span class="info-label">Flight Details:</span>
-                      ${member.arrival_flight_number ? `
-                        <div class="flight-info">✈️ Arrival: ${member.arrival_flight_number} ${member.arrival_flight_time ? `at ${member.arrival_flight_time}` : ''}</div>
-                      ` : ''}
-                      ${member.departure_flight_number ? `
-                        <div class="flight-info">🛫 Departure: ${member.departure_flight_number} ${member.departure_flight_time ? `at ${member.departure_flight_time}` : ''}</div>
-                      ` : ''}
+                      ${
+                        member.arrival_flight_number
+                          ? `
+                        <div class="flight-info">✈️ Arrival: ${member.arrival_flight_number} ${member.arrival_flight_time ? `at ${member.arrival_flight_time}` : ""}</div>
+                      `
+                          : ""
+                      }
+                      ${
+                        member.departure_flight_number
+                          ? `
+                        <div class="flight-info">🛫 Departure: ${member.departure_flight_number} ${member.departure_flight_time ? `at ${member.departure_flight_time}` : ""}</div>
+                      `
+                          : ""
+                      }
                     </div>
-                  ` : ''}
+                  `
+                      : ""
+                  }
                 </div>
-              `).join('')}
+              `,
+                )
+                .join("")}
             </div>
-          ` : ''}
+          `
+              : ""
+          }
 
-          ${group.total_cost || group.amount_paid || group.deposit_amount ? `
+          ${
+            group.total_cost || group.amount_paid || group.deposit_amount
+              ? `
             <div class="section">
               <div class="section-title">💰 Financial Information</div>
               <div class="financial-summary">
@@ -966,45 +1157,71 @@ export default function GroupBookings() {
                   <span>Amount Paid:</span>
                   <span>$${(group.amount_paid || 0).toFixed(2)}</span>
                 </div>
-                ${group.deposit_amount ? `
+                ${
+                  group.deposit_amount
+                    ? `
                   <div class="financial-item">
                     <span>Deposit:</span>
                     <span>$${group.deposit_amount.toFixed(2)}</span>
                   </div>
-                ` : ''}
+                `
+                    : ""
+                }
                 <div class="financial-item total">
-                  <span>${group.status === 'cancelled' ? 'Refund Amount:' : 'Outstanding Balance:'}</span>
-                  <span>${group.status === 'cancelled'
-                    ? '$' + (group.refund_amount || 0).toFixed(2)
-                    : '$' + ((group.total_cost || 0) - (group.amount_paid || 0)).toFixed(2)
+                  <span>${group.status === "cancelled" ? "Refund Amount:" : "Outstanding Balance:"}</span>
+                  <span>${
+                    group.status === "cancelled"
+                      ? "$" + (group.refund_amount || 0).toFixed(2)
+                      : "$" +
+                        (
+                          (group.total_cost || 0) - (group.amount_paid || 0)
+                        ).toFixed(2)
                   }</span>
                 </div>
-                ${group.status === 'cancelled' && group.cancelled_at ? `
+                ${
+                  group.status === "cancelled" && group.cancelled_at
+                    ? `
                   <div style="margin-top: 10px; font-size: 14px; color: #666;">
                     Reservation cancelled on ${new Date(group.cancelled_at).toLocaleDateString()}
                   </div>
-                ` : ''}
+                `
+                    : ""
+                }
               </div>
             </div>
-          ` : ''}
+          `
+              : ""
+          }
 
-          ${group.special_requirements || group.group_notes ? `
+          ${
+            group.special_requirements || group.group_notes
+              ? `
             <div class="section">
               <div class="section-title">📝 Additional Information</div>
-              ${group.special_requirements ? `
+              ${
+                group.special_requirements
+                  ? `
                 <div style="margin-bottom: 15px;">
                   <span class="info-label">Special Requirements:</span>
                   <div class="notes-box">${group.special_requirements}</div>
                 </div>
-              ` : ''}
-              ${group.group_notes ? `
+              `
+                  : ""
+              }
+              ${
+                group.group_notes
+                  ? `
                 <div>
                   <span class="info-label">Group Notes:</span>
                   <div class="notes-box">${group.group_notes}</div>
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
             </div>
-          ` : ''}
+          `
+              : ""
+          }
 
           <div class="footer">
             <p>This document was generated by JIGUANG TOUR on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
@@ -1026,15 +1243,50 @@ export default function GroupBookings() {
     };
   };
 
-  const filteredGroups = groups.filter(group => {
-    const matchesSearch = searchTerm === "" || 
+  const filteredGroups = groups.filter((group) => {
+    // Text search by name or leader
+    const matchesSearch =
+      searchTerm === "" ||
       group.group_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (group.leader_name && group.leader_name.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = statusFilter === "all" || group.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
+      (group.leader_name &&
+        group.leader_name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    // Group ID exact match if provided
+    const matchesId = !groupIdFilter || group.id === Number(groupIdFilter);
+
+    // Status filter
+    const matchesStatus =
+      statusFilter === "all" || group.status === statusFilter;
+
+    // Date filter: show groups active on this date
+    const matchesDate = (() => {
+      if (!dateFilter) return true;
+      const date = new Date(dateFilter + "T00:00:00");
+      // Prefer tour dates; fallback to arrival/departure when traveling together; else created_at only
+      const startStr =
+        group.tour_start_date ||
+        (group.traveling_together ? group.arrival_date : undefined) ||
+        group.created_at;
+      const endStr =
+        group.tour_end_date ||
+        (group.traveling_together ? group.departure_date : undefined) ||
+        group.created_at;
+      if (!startStr && !endStr) return true;
+      const start = startStr ? new Date(startStr) : null;
+      const end = endStr ? new Date(endStr) : null;
+      if (start && end)
+        return date >= stripTime(start) && date <= stripTime(end);
+      if (start && !end) return date >= stripTime(start);
+      if (!start && end) return date <= stripTime(end);
+      return true;
+    })();
+
+    return matchesSearch && matchesId && matchesStatus && matchesDate;
   });
+
+  function stripTime(d: Date) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
 
   if (loading) {
     return (
@@ -1084,13 +1336,20 @@ export default function GroupBookings() {
                     <Input
                       id="group_name"
                       value={newGroup.group_name}
-                      onChange={(e) => setNewGroup({...newGroup, group_name: e.target.value})}
+                      onChange={(e) =>
+                        setNewGroup({ ...newGroup, group_name: e.target.value })
+                      }
                       placeholder="Johnson Family, Corporate Retreat..."
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="group_type">Group Type</Label>
-                    <Select value={newGroup.group_type} onValueChange={(value) => setNewGroup({...newGroup, group_type: value})}>
+                    <Select
+                      value={newGroup.group_type}
+                      onValueChange={(value) =>
+                        setNewGroup({ ...newGroup, group_type: value })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -1117,7 +1376,12 @@ export default function GroupBookings() {
                       id="tour_start_date"
                       type="date"
                       value={newGroup.tour_start_date}
-                      onChange={(e) => setNewGroup({...newGroup, tour_start_date: e.target.value})}
+                      onChange={(e) =>
+                        setNewGroup({
+                          ...newGroup,
+                          tour_start_date: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -1126,7 +1390,12 @@ export default function GroupBookings() {
                       id="tour_end_date"
                       type="date"
                       value={newGroup.tour_end_date}
-                      onChange={(e) => setNewGroup({...newGroup, tour_end_date: e.target.value})}
+                      onChange={(e) =>
+                        setNewGroup({
+                          ...newGroup,
+                          tour_end_date: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -1138,22 +1407,34 @@ export default function GroupBookings() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-purple-600" />
-                    <h4 className="text-md font-semibold">Travel Arrangements</h4>
+                    <h4 className="text-md font-semibold">
+                      Travel Arrangements
+                    </h4>
                   </div>
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
                       id="traveling_together"
                       checked={newGroup.traveling_together}
-                      onChange={(e) => setNewGroup({...newGroup, traveling_together: e.target.checked})}
+                      onChange={(e) =>
+                        setNewGroup({
+                          ...newGroup,
+                          traveling_together: e.target.checked,
+                        })
+                      }
                       className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                     />
-                    <Label htmlFor="traveling_together" className="text-sm font-medium">
-                      All group members are traveling together (same dates and flights)
+                    <Label
+                      htmlFor="traveling_together"
+                      className="text-sm font-medium"
+                    >
+                      All group members are traveling together (same dates and
+                      flights)
                     </Label>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Uncheck this if group members have different travel dates and flight arrangements.
+                    Uncheck this if group members have different travel dates
+                    and flight arrangements.
                   </p>
                 </div>
 
@@ -1166,16 +1447,28 @@ export default function GroupBookings() {
                         id="arrival_date"
                         type="date"
                         value={newGroup.arrival_date}
-                        onChange={(e) => setNewGroup({...newGroup, arrival_date: e.target.value})}
+                        onChange={(e) =>
+                          setNewGroup({
+                            ...newGroup,
+                            arrival_date: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="departure_date">Group Departure Date</Label>
+                      <Label htmlFor="departure_date">
+                        Group Departure Date
+                      </Label>
                       <Input
                         id="departure_date"
                         type="date"
                         value={newGroup.departure_date}
-                        onChange={(e) => setNewGroup({...newGroup, departure_date: e.target.value})}
+                        onChange={(e) =>
+                          setNewGroup({
+                            ...newGroup,
+                            departure_date: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </div>
@@ -1188,25 +1481,41 @@ export default function GroupBookings() {
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <Plane className="h-5 w-5 text-blue-600" />
-                        <h4 className="text-md font-semibold">Group Arrival Flight Details</h4>
+                        <h4 className="text-md font-semibold">
+                          Group Arrival Flight Details
+                        </h4>
                       </div>
                       <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="arrival_flight_number">Flight Number</Label>
+                          <Label htmlFor="arrival_flight_number">
+                            Flight Number
+                          </Label>
                           <Input
                             id="arrival_flight_number"
                             value={newGroup.arrival_flight_number}
-                            onChange={(e) => setNewGroup({...newGroup, arrival_flight_number: e.target.value})}
+                            onChange={(e) =>
+                              setNewGroup({
+                                ...newGroup,
+                                arrival_flight_number: e.target.value,
+                              })
+                            }
                             placeholder="e.g. AI 123"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="arrival_flight_time">Flight Time</Label>
+                          <Label htmlFor="arrival_flight_time">
+                            Flight Time
+                          </Label>
                           <Input
                             id="arrival_flight_time"
                             type="time"
                             value={newGroup.arrival_flight_time}
-                            onChange={(e) => setNewGroup({...newGroup, arrival_flight_time: e.target.value})}
+                            onChange={(e) =>
+                              setNewGroup({
+                                ...newGroup,
+                                arrival_flight_time: e.target.value,
+                              })
+                            }
                           />
                         </div>
                         <div className="space-y-2">
@@ -1214,7 +1523,12 @@ export default function GroupBookings() {
                           <Input
                             id="arrival_notes"
                             value={newGroup.arrival_notes}
-                            onChange={(e) => setNewGroup({...newGroup, arrival_notes: e.target.value})}
+                            onChange={(e) =>
+                              setNewGroup({
+                                ...newGroup,
+                                arrival_notes: e.target.value,
+                              })
+                            }
                             placeholder="Terminal, gate info..."
                           />
                         </div>
@@ -1225,33 +1539,56 @@ export default function GroupBookings() {
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <Plane className="h-5 w-5 text-orange-600 rotate-45" />
-                        <h4 className="text-md font-semibold">Group Departure Flight Details</h4>
+                        <h4 className="text-md font-semibold">
+                          Group Departure Flight Details
+                        </h4>
                       </div>
                       <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="departure_flight_number">Flight Number</Label>
+                          <Label htmlFor="departure_flight_number">
+                            Flight Number
+                          </Label>
                           <Input
                             id="departure_flight_number"
                             value={newGroup.departure_flight_number}
-                            onChange={(e) => setNewGroup({...newGroup, departure_flight_number: e.target.value})}
+                            onChange={(e) =>
+                              setNewGroup({
+                                ...newGroup,
+                                departure_flight_number: e.target.value,
+                              })
+                            }
                             placeholder="e.g. AI 456"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="departure_flight_time">Flight Time</Label>
+                          <Label htmlFor="departure_flight_time">
+                            Flight Time
+                          </Label>
                           <Input
                             id="departure_flight_time"
                             type="time"
                             value={newGroup.departure_flight_time}
-                            onChange={(e) => setNewGroup({...newGroup, departure_flight_time: e.target.value})}
+                            onChange={(e) =>
+                              setNewGroup({
+                                ...newGroup,
+                                departure_flight_time: e.target.value,
+                              })
+                            }
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="departure_notes">Departure Notes</Label>
+                          <Label htmlFor="departure_notes">
+                            Departure Notes
+                          </Label>
                           <Input
                             id="departure_notes"
                             value={newGroup.departure_notes}
-                            onChange={(e) => setNewGroup({...newGroup, departure_notes: e.target.value})}
+                            onChange={(e) =>
+                              setNewGroup({
+                                ...newGroup,
+                                departure_notes: e.target.value,
+                              })
+                            }
                             placeholder="Terminal, check-in time..."
                           />
                         </div>
@@ -1264,7 +1601,9 @@ export default function GroupBookings() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <span className="h-5 w-5 text-green-600">💰</span>
-                    <h4 className="text-md font-semibold">Financial Information</h4>
+                    <h4 className="text-md font-semibold">
+                      Financial Information
+                    </h4>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
@@ -1275,7 +1614,12 @@ export default function GroupBookings() {
                         step="0.01"
                         min="0"
                         value={newGroup.total_cost}
-                        onChange={(e) => setNewGroup({...newGroup, total_cost: parseFloat(e.target.value) || 0})}
+                        onChange={(e) =>
+                          setNewGroup({
+                            ...newGroup,
+                            total_cost: parseFloat(e.target.value) || 0,
+                          })
+                        }
                         placeholder="0.00"
                       />
                     </div>
@@ -1287,7 +1631,12 @@ export default function GroupBookings() {
                         step="0.01"
                         min="0"
                         value={newGroup.amount_paid}
-                        onChange={(e) => setNewGroup({...newGroup, amount_paid: parseFloat(e.target.value) || 0})}
+                        onChange={(e) =>
+                          setNewGroup({
+                            ...newGroup,
+                            amount_paid: parseFloat(e.target.value) || 0,
+                          })
+                        }
                         placeholder="0.00"
                       />
                     </div>
@@ -1299,22 +1648,37 @@ export default function GroupBookings() {
                         step="0.01"
                         min="0"
                         value={newGroup.deposit_amount}
-                        onChange={(e) => setNewGroup({...newGroup, deposit_amount: parseFloat(e.target.value) || 0})}
+                        onChange={(e) =>
+                          setNewGroup({
+                            ...newGroup,
+                            deposit_amount: parseFloat(e.target.value) || 0,
+                          })
+                        }
                         placeholder="0.00"
                       />
                     </div>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Outstanding Balance: ${((newGroup.total_cost || 0) - (newGroup.amount_paid || 0)).toFixed(2)}
+                    Outstanding Balance: $
+                    {(
+                      (newGroup.total_cost || 0) - (newGroup.amount_paid || 0)
+                    ).toFixed(2)}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="special_requirements">Special Requirements</Label>
+                  <Label htmlFor="special_requirements">
+                    Special Requirements
+                  </Label>
                   <Textarea
                     id="special_requirements"
                     value={newGroup.special_requirements}
-                    onChange={(e) => setNewGroup({...newGroup, special_requirements: e.target.value})}
+                    onChange={(e) =>
+                      setNewGroup({
+                        ...newGroup,
+                        special_requirements: e.target.value,
+                      })
+                    }
                     placeholder="Any special accommodations needed..."
                   />
                 </div>
@@ -1323,7 +1687,9 @@ export default function GroupBookings() {
                   <Textarea
                     id="group_notes"
                     value={newGroup.group_notes}
-                    onChange={(e) => setNewGroup({...newGroup, group_notes: e.target.value})}
+                    onChange={(e) =>
+                      setNewGroup({ ...newGroup, group_notes: e.target.value })
+                    }
                     placeholder="Additional notes about the group..."
                   />
                 </div>
@@ -1332,7 +1698,9 @@ export default function GroupBookings() {
               {/* Group Members */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Group Members ({groupMembers.length})</h3>
+                  <h3 className="text-lg font-semibold">
+                    Group Members ({groupMembers.length})
+                  </h3>
                   <Button type="button" variant="outline" onClick={addMember}>
                     <UserPlus className="mr-2 h-4 w-4" />
                     Add Member
@@ -1356,9 +1724,11 @@ export default function GroupBookings() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => updateMember(index, 'is_leader', !member.is_leader)}
+                          onClick={() =>
+                            updateMember(index, "is_leader", !member.is_leader)
+                          }
                         >
-                          {member.is_leader ? 'Remove Leader' : 'Make Leader'}
+                          {member.is_leader ? "Remove Leader" : "Make Leader"}
                         </Button>
                         {groupMembers.length > 1 && (
                           <Button
@@ -1378,7 +1748,9 @@ export default function GroupBookings() {
                         <Label>First Name *</Label>
                         <Input
                           value={member.first_name}
-                          onChange={(e) => updateMember(index, 'first_name', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(index, "first_name", e.target.value)
+                          }
                           placeholder="First name"
                         />
                       </div>
@@ -1386,7 +1758,9 @@ export default function GroupBookings() {
                         <Label>Last Name *</Label>
                         <Input
                           value={member.last_name}
-                          onChange={(e) => updateMember(index, 'last_name', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(index, "last_name", e.target.value)
+                          }
                           placeholder="Last name"
                         />
                       </div>
@@ -1395,7 +1769,9 @@ export default function GroupBookings() {
                         <Input
                           type="email"
                           value={member.email}
-                          onChange={(e) => updateMember(index, 'email', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(index, "email", e.target.value)
+                          }
                           placeholder="Email address"
                         />
                       </div>
@@ -1403,7 +1779,9 @@ export default function GroupBookings() {
                         <Label>Phone</Label>
                         <Input
                           value={member.phone}
-                          onChange={(e) => updateMember(index, 'phone', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(index, "phone", e.target.value)
+                          }
                           placeholder="Phone number"
                         />
                       </div>
@@ -1411,7 +1789,13 @@ export default function GroupBookings() {
                         <Label>Passport Number</Label>
                         <Input
                           value={member.passport_number}
-                          onChange={(e) => updateMember(index, 'passport_number', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(
+                              index,
+                              "passport_number",
+                              e.target.value,
+                            )
+                          }
                           placeholder="Passport number"
                         />
                       </div>
@@ -1419,7 +1803,9 @@ export default function GroupBookings() {
                         <Label>Nationality</Label>
                         <Input
                           value={member.nationality}
-                          onChange={(e) => updateMember(index, 'nationality', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(index, "nationality", e.target.value)
+                          }
                           placeholder="Nationality"
                         />
                       </div>
@@ -1428,14 +1814,22 @@ export default function GroupBookings() {
                         <Input
                           type="date"
                           value={member.date_of_birth}
-                          onChange={(e) => updateMember(index, 'date_of_birth', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(index, "date_of_birth", e.target.value)
+                          }
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Dietary Restrictions</Label>
                         <Input
                           value={member.dietary_restrictions}
-                          onChange={(e) => updateMember(index, 'dietary_restrictions', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(
+                              index,
+                              "dietary_restrictions",
+                              e.target.value,
+                            )
+                          }
                           placeholder="Allergies, preferences..."
                         />
                       </div>
@@ -1443,7 +1837,13 @@ export default function GroupBookings() {
                         <Label>Emergency Contact Name</Label>
                         <Input
                           value={member.emergency_contact_name}
-                          onChange={(e) => updateMember(index, 'emergency_contact_name', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(
+                              index,
+                              "emergency_contact_name",
+                              e.target.value,
+                            )
+                          }
                           placeholder="Emergency contact"
                         />
                       </div>
@@ -1451,7 +1851,13 @@ export default function GroupBookings() {
                         <Label>Emergency Contact Phone</Label>
                         <Input
                           value={member.emergency_contact_phone}
-                          onChange={(e) => updateMember(index, 'emergency_contact_phone', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(
+                              index,
+                              "emergency_contact_phone",
+                              e.target.value,
+                            )
+                          }
                           placeholder="Emergency phone"
                         />
                       </div>
@@ -1462,27 +1868,42 @@ export default function GroupBookings() {
                       <div className="mt-4 space-y-4">
                         <h5 className="font-medium flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-purple-600" />
-                          Individual Travel Information for {member.first_name || `Member ${index + 1}`}
+                          Individual Travel Information for{" "}
+                          {member.first_name || `Member ${index + 1}`}
                         </h5>
 
                         {/* Individual Travel Dates */}
                         <div className="space-y-3">
-                          <h6 className="text-sm font-medium text-purple-600">Travel Dates</h6>
+                          <h6 className="text-sm font-medium text-purple-600">
+                            Travel Dates
+                          </h6>
                           <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-2">
                               <Label>Arrival Date</Label>
                               <Input
                                 type="date"
-                                value={member.arrival_date || ''}
-                                onChange={(e) => updateMember(index, 'arrival_date', e.target.value)}
+                                value={member.arrival_date || ""}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "arrival_date",
+                                    e.target.value,
+                                  )
+                                }
                               />
                             </div>
                             <div className="space-y-2">
                               <Label>Departure Date</Label>
                               <Input
                                 type="date"
-                                value={member.departure_date || ''}
-                                onChange={(e) => updateMember(index, 'departure_date', e.target.value)}
+                                value={member.departure_date || ""}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "departure_date",
+                                    e.target.value,
+                                  )
+                                }
                               />
                             </div>
                           </div>
@@ -1490,13 +1911,21 @@ export default function GroupBookings() {
 
                         {/* Individual Flight Information */}
                         <div className="space-y-3">
-                          <h6 className="text-sm font-medium text-blue-600">Arrival Flight</h6>
+                          <h6 className="text-sm font-medium text-blue-600">
+                            Arrival Flight
+                          </h6>
                           <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-2">
                               <Label>Flight Number</Label>
                               <Input
                                 value={member.arrival_flight_number}
-                                onChange={(e) => updateMember(index, 'arrival_flight_number', e.target.value)}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "arrival_flight_number",
+                                    e.target.value,
+                                  )
+                                }
                                 placeholder="e.g. AI 123"
                               />
                             </div>
@@ -1505,14 +1934,26 @@ export default function GroupBookings() {
                               <Input
                                 type="time"
                                 value={member.arrival_flight_time}
-                                onChange={(e) => updateMember(index, 'arrival_flight_time', e.target.value)}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "arrival_flight_time",
+                                    e.target.value,
+                                  )
+                                }
                               />
                             </div>
                             <div className="space-y-2">
                               <Label>Arrival Notes</Label>
                               <Input
                                 value={member.arrival_notes}
-                                onChange={(e) => updateMember(index, 'arrival_notes', e.target.value)}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "arrival_notes",
+                                    e.target.value,
+                                  )
+                                }
                                 placeholder="Terminal, gate..."
                               />
                             </div>
@@ -1520,13 +1961,21 @@ export default function GroupBookings() {
                         </div>
 
                         <div className="space-y-3">
-                          <h6 className="text-sm font-medium text-orange-600">Departure Flight</h6>
+                          <h6 className="text-sm font-medium text-orange-600">
+                            Departure Flight
+                          </h6>
                           <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-2">
                               <Label>Flight Number</Label>
                               <Input
                                 value={member.departure_flight_number}
-                                onChange={(e) => updateMember(index, 'departure_flight_number', e.target.value)}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "departure_flight_number",
+                                    e.target.value,
+                                  )
+                                }
                                 placeholder="e.g. AI 456"
                               />
                             </div>
@@ -1535,14 +1984,26 @@ export default function GroupBookings() {
                               <Input
                                 type="time"
                                 value={member.departure_flight_time}
-                                onChange={(e) => updateMember(index, 'departure_flight_time', e.target.value)}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "departure_flight_time",
+                                    e.target.value,
+                                  )
+                                }
                               />
                             </div>
                             <div className="space-y-2">
                               <Label>Departure Notes</Label>
                               <Input
                                 value={member.departure_notes}
-                                onChange={(e) => updateMember(index, 'departure_notes', e.target.value)}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "departure_notes",
+                                    e.target.value,
+                                  )
+                                }
                                 placeholder="Terminal, check-in..."
                               />
                             </div>
@@ -1556,10 +2017,13 @@ export default function GroupBookings() {
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => {
-                setIsCreateDialogOpen(false);
-                resetForm();
-              }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsCreateDialogOpen(false);
+                  resetForm();
+                }}
+              >
                 Cancel
               </Button>
               <Button onClick={createGroup} disabled={isCreating}>
@@ -1569,7 +2033,7 @@ export default function GroupBookings() {
                     Creating Group...
                   </div>
                 ) : (
-                  `Create Group (${groupMembers.filter(m => m.first_name && m.last_name && m.email).length} members)`
+                  `Create Group (${groupMembers.filter((m) => m.first_name && m.last_name && m.email).length} members)`
                 )}
               </Button>
             </div>
@@ -1604,20 +2068,41 @@ export default function GroupBookings() {
                 {/* Group Header */}
                 <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                   <div>
-                    <h3 className="text-xl font-semibold">{selectedGroup.group_name}</h3>
+                    <h3 className="text-xl font-semibold">
+                      {selectedGroup.group_name}
+                    </h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={getGroupTypeColor(selectedGroup.group_type)}>{selectedGroup.group_type}</Badge>
-                      <Badge variant={getStatusColor(selectedGroup.status)}>{selectedGroup.status}</Badge>
+                      <Badge variant="outline">ID #{selectedGroup.id}</Badge>
+                      <Badge
+                        variant={getGroupTypeColor(selectedGroup.group_type)}
+                      >
+                        {selectedGroup.group_type}
+                      </Badge>
+                      <Badge variant={getStatusColor(selectedGroup.status)}>
+                        {selectedGroup.status}
+                      </Badge>
+                      {selectedGroup.bookings &&
+                        selectedGroup.bookings.length > 0 && (
+                          <Badge variant="outline">
+                            Invoice #
+                            {selectedGroup.bookings[0]?.invoice_number || "—"}
+                          </Badge>
+                        )}
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Total Members</p>
-                    <p className="text-2xl font-bold">{selectedGroup.total_members}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Total Members
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {selectedGroup.total_members}
+                    </p>
                   </div>
                 </div>
 
                 {/* Tour Dates */}
-                {(selectedGroup.tour_start_date || selectedGroup.tour_end_date) && (
+                {(selectedGroup.tour_start_date ||
+                  selectedGroup.tour_end_date) && (
                   <div className="space-y-4">
                     <h4 className="font-semibold flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-green-600" />
@@ -1626,14 +2111,26 @@ export default function GroupBookings() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {selectedGroup.tour_start_date && (
                         <div className="p-4 border rounded-lg">
-                          <p className="text-sm text-muted-foreground mb-1">Tour Start Date</p>
-                          <p className="font-medium">{new Date(selectedGroup.tour_start_date).toLocaleDateString()}</p>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Tour Start Date
+                          </p>
+                          <p className="font-medium">
+                            {new Date(
+                              selectedGroup.tour_start_date,
+                            ).toLocaleDateString()}
+                          </p>
                         </div>
                       )}
                       {selectedGroup.tour_end_date && (
                         <div className="p-4 border rounded-lg">
-                          <p className="text-sm text-muted-foreground mb-1">Tour End Date</p>
-                          <p className="font-medium">{new Date(selectedGroup.tour_end_date).toLocaleDateString()}</p>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Tour End Date
+                          </p>
+                          <p className="font-medium">
+                            {new Date(
+                              selectedGroup.tour_end_date,
+                            ).toLocaleDateString()}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -1643,28 +2140,42 @@ export default function GroupBookings() {
                 {/* Group Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Travel Dates - Only shown when traveling together */}
-                  {Boolean(selectedGroup.traveling_together) && (selectedGroup.arrival_date || selectedGroup.departure_date) && (
-                    <div className="space-y-4">
-                      <h4 className="font-semibold flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        Group Travel Dates
-                      </h4>
-                      <div className="space-y-2">
-                        {selectedGroup.arrival_date && (
-                          <div>
-                            <p className="text-sm text-muted-foreground">Group Arrival</p>
-                            <p>{new Date(selectedGroup.arrival_date).toLocaleDateString()}</p>
-                          </div>
-                        )}
-                        {selectedGroup.departure_date && (
-                          <div>
-                            <p className="text-sm text-muted-foreground">Group Departure</p>
-                            <p>{new Date(selectedGroup.departure_date).toLocaleDateString()}</p>
-                          </div>
-                        )}
+                  {Boolean(selectedGroup.traveling_together) &&
+                    (selectedGroup.arrival_date ||
+                      selectedGroup.departure_date) && (
+                      <div className="space-y-4">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Group Travel Dates
+                        </h4>
+                        <div className="space-y-2">
+                          {selectedGroup.arrival_date && (
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Group Arrival
+                              </p>
+                              <p>
+                                {new Date(
+                                  selectedGroup.arrival_date,
+                                ).toLocaleDateString()}
+                              </p>
+                            </div>
+                          )}
+                          {selectedGroup.departure_date && (
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Group Departure
+                              </p>
+                              <p>
+                                {new Date(
+                                  selectedGroup.departure_date,
+                                ).toLocaleDateString()}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   <div className="space-y-4">
                     <h4 className="font-semibold flex items-center gap-2">
@@ -1695,50 +2206,86 @@ export default function GroupBookings() {
                 </div>
 
                 {/* Flight Information - Only shown when traveling together */}
-                {Boolean(selectedGroup.traveling_together) && (selectedGroup.arrival_flight_number || selectedGroup.departure_flight_number) && (
-                  <div className="space-y-4">
-                    <h4 className="font-semibold flex items-center gap-2">
-                      <Plane className="h-4 w-4" />
-                      Flight Information
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedGroup.arrival_flight_number && (
-                        <div className="p-4 border rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Plane className="h-4 w-4 text-blue-600" />
-                            <span className="font-medium">Arrival Flight</span>
+                {Boolean(selectedGroup.traveling_together) &&
+                  (selectedGroup.arrival_flight_number ||
+                    selectedGroup.departure_flight_number) && (
+                    <div className="space-y-4">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <Plane className="h-4 w-4" />
+                        Flight Information
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {selectedGroup.arrival_flight_number && (
+                          <div className="p-4 border rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Plane className="h-4 w-4 text-blue-600" />
+                              <span className="font-medium">
+                                Arrival Flight
+                              </span>
+                            </div>
+                            <div className="space-y-1">
+                              <p>
+                                <span className="text-muted-foreground">
+                                  Flight:
+                                </span>{" "}
+                                {selectedGroup.arrival_flight_number}
+                              </p>
+                              {selectedGroup.arrival_flight_time && (
+                                <p>
+                                  <span className="text-muted-foreground">
+                                    Time:
+                                  </span>{" "}
+                                  {selectedGroup.arrival_flight_time}
+                                </p>
+                              )}
+                              {selectedGroup.arrival_notes && (
+                                <p>
+                                  <span className="text-muted-foreground">
+                                    Notes:
+                                  </span>{" "}
+                                  {selectedGroup.arrival_notes}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          <div className="space-y-1">
-                            <p><span className="text-muted-foreground">Flight:</span> {selectedGroup.arrival_flight_number}</p>
-                            {selectedGroup.arrival_flight_time && (
-                              <p><span className="text-muted-foreground">Time:</span> {selectedGroup.arrival_flight_time}</p>
-                            )}
-                            {selectedGroup.arrival_notes && (
-                              <p><span className="text-muted-foreground">Notes:</span> {selectedGroup.arrival_notes}</p>
-                            )}
+                        )}
+                        {selectedGroup.departure_flight_number && (
+                          <div className="p-4 border rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Plane className="h-4 w-4 text-orange-600 rotate-45" />
+                              <span className="font-medium">
+                                Departure Flight
+                              </span>
+                            </div>
+                            <div className="space-y-1">
+                              <p>
+                                <span className="text-muted-foreground">
+                                  Flight:
+                                </span>{" "}
+                                {selectedGroup.departure_flight_number}
+                              </p>
+                              {selectedGroup.departure_flight_time && (
+                                <p>
+                                  <span className="text-muted-foreground">
+                                    Time:
+                                  </span>{" "}
+                                  {selectedGroup.departure_flight_time}
+                                </p>
+                              )}
+                              {selectedGroup.departure_notes && (
+                                <p>
+                                  <span className="text-muted-foreground">
+                                    Notes:
+                                  </span>{" "}
+                                  {selectedGroup.departure_notes}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {selectedGroup.departure_flight_number && (
-                        <div className="p-4 border rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Plane className="h-4 w-4 text-orange-600 rotate-45" />
-                            <span className="font-medium">Departure Flight</span>
-                          </div>
-                          <div className="space-y-1">
-                            <p><span className="text-muted-foreground">Flight:</span> {selectedGroup.departure_flight_number}</p>
-                            {selectedGroup.departure_flight_time && (
-                              <p><span className="text-muted-foreground">Time:</span> {selectedGroup.departure_flight_time}</p>
-                            )}
-                            {selectedGroup.departure_notes && (
-                              <p><span className="text-muted-foreground">Notes:</span> {selectedGroup.departure_notes}</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Travel Arrangements - Show when NOT traveling together */}
                 {!Boolean(selectedGroup.traveling_together) && (
@@ -1749,27 +2296,37 @@ export default function GroupBookings() {
                         <span className="font-medium">Travel Arrangements</span>
                       </div>
                       <p className="text-muted-foreground">
-                        Group members are travelling separately with individual flight arrangements.
+                        Group members are travelling separately with individual
+                        flight arrangements.
                       </p>
                     </div>
                   </div>
                 )}
 
                 {/* Additional Information */}
-                {(selectedGroup.special_requirements || selectedGroup.group_notes) && (
+                {(selectedGroup.special_requirements ||
+                  selectedGroup.group_notes) && (
                   <div className="space-y-4">
                     <h4 className="font-semibold">Additional Information</h4>
                     <div className="grid grid-cols-1 gap-4">
                       {selectedGroup.special_requirements && (
                         <div>
-                          <p className="text-sm text-muted-foreground mb-1">Special Requirements</p>
-                          <p className="p-3 bg-muted rounded">{selectedGroup.special_requirements}</p>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Special Requirements
+                          </p>
+                          <p className="p-3 bg-muted rounded">
+                            {selectedGroup.special_requirements}
+                          </p>
                         </div>
                       )}
                       {selectedGroup.group_notes && (
                         <div>
-                          <p className="text-sm text-muted-foreground mb-1">Group Notes</p>
-                          <p className="p-3 bg-muted rounded">{selectedGroup.group_notes}</p>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Group Notes
+                          </p>
+                          <p className="p-3 bg-muted rounded">
+                            {selectedGroup.group_notes}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -1777,7 +2334,9 @@ export default function GroupBookings() {
                 )}
 
                 {/* Financial Information */}
-                {(selectedGroup.total_cost || selectedGroup.amount_paid || selectedGroup.deposit_amount) && (
+                {(selectedGroup.total_cost ||
+                  selectedGroup.amount_paid ||
+                  selectedGroup.deposit_amount) && (
                   <div className="space-y-4">
                     <h4 className="font-semibold flex items-center gap-2">
                       <span className="text-green-600">💰</span>
@@ -1785,20 +2344,30 @@ export default function GroupBookings() {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="p-4 border rounded-lg">
-                        <p className="text-sm text-muted-foreground">Total Cost</p>
-                        <p className="text-2xl font-bold text-blue-600">${(selectedGroup.total_cost || 0).toFixed(2)}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Total Cost
+                        </p>
+                        <p className="text-2xl font-bold text-blue-600">
+                          ${(selectedGroup.total_cost || 0).toFixed(2)}
+                        </p>
                       </div>
                       <div className="p-4 border rounded-lg">
-                        <p className="text-sm text-muted-foreground">Amount Paid</p>
-                        <p className="text-2xl font-bold text-green-600">${(selectedGroup.amount_paid || 0).toFixed(2)}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Amount Paid
+                        </p>
+                        <p className="text-2xl font-bold text-green-600">
+                          ${(selectedGroup.amount_paid || 0).toFixed(2)}
+                        </p>
                       </div>
                       <div className="p-4 border rounded-lg">
                         <p className="text-sm text-muted-foreground">Deposit</p>
-                        <p className="text-2xl font-bold text-orange-600">${(selectedGroup.deposit_amount || 0).toFixed(2)}</p>
+                        <p className="text-2xl font-bold text-orange-600">
+                          ${(selectedGroup.deposit_amount || 0).toFixed(2)}
+                        </p>
                       </div>
                     </div>
                     <div className="p-4 bg-muted rounded-lg">
-                      {selectedGroup.status === 'cancelled' ? (
+                      {selectedGroup.status === "cancelled" ? (
                         <div>
                           <div className="flex justify-between items-center">
                             <span className="font-medium">Refund Amount:</span>
@@ -1807,31 +2376,86 @@ export default function GroupBookings() {
                             </span>
                           </div>
                           <div className="text-sm text-muted-foreground mt-1">
-                            Reservation cancelled {selectedGroup.cancelled_at && `on ${new Date(selectedGroup.cancelled_at).toLocaleDateString()}`}
+                            Reservation cancelled{" "}
+                            {selectedGroup.cancelled_at &&
+                              `on ${new Date(selectedGroup.cancelled_at).toLocaleDateString()}`}
                           </div>
                         </div>
                       ) : (
                         <div>
                           <div className="flex justify-between items-center">
-                            <span className="font-medium">Outstanding Balance:</span>
-                            <span className={`text-xl font-bold ${
-                              ((selectedGroup.total_cost || 0) - (selectedGroup.amount_paid || 0)) > 0
-                                ? 'text-red-600'
-                                : 'text-green-600'
-                            }`}>
-                              ${((selectedGroup.total_cost || 0) - (selectedGroup.amount_paid || 0)).toFixed(2)}
+                            <span className="font-medium">
+                              Outstanding Balance:
+                            </span>
+                            <span
+                              className={`text-xl font-bold ${
+                                (selectedGroup.total_cost || 0) -
+                                  (selectedGroup.amount_paid || 0) >
+                                0
+                                  ? "text-red-600"
+                                  : "text-green-600"
+                              }`}
+                            >
+                              $
+                              {(
+                                (selectedGroup.total_cost || 0) -
+                                (selectedGroup.amount_paid || 0)
+                              ).toFixed(2)}
                             </span>
                           </div>
-                          {selectedGroup.deposit_amount && selectedGroup.deposit_amount > 0 && (
-                            <div className="text-sm text-muted-foreground mt-1">
-                              Deposit of ${selectedGroup.deposit_amount.toFixed(2)} has been collected
-                            </div>
-                          )}
+                          {selectedGroup.deposit_amount &&
+                            selectedGroup.deposit_amount > 0 && (
+                              <div className="text-sm text-muted-foreground mt-1">
+                                Deposit of $
+                                {selectedGroup.deposit_amount.toFixed(2)} has
+                                been collected
+                              </div>
+                            )}
                         </div>
                       )}
                     </div>
                   </div>
                 )}
+
+                {/* Bookings (with Invoice Numbers) */}
+                {selectedGroup.bookings &&
+                  selectedGroup.bookings.length > 0 && (
+                    <div className="space-y-4">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <span className="text-blue-600">📄</span>
+                        Bookings
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {selectedGroup.bookings.map((b) => (
+                          <div key={b.id} className="p-4 border rounded-lg">
+                            <div className="flex justify-between items-center">
+                              <div className="font-medium">
+                                Invoice #{b.invoice_number || "—"}
+                              </div>
+                              <Badge variant="outline">{b.status}</Badge>
+                            </div>
+                            <div className="text-sm mt-2 space-y-1">
+                              <div>Ref: {b.booking_reference}</div>
+                              <div>Guest: {b.guest_name}</div>
+                              <div>Tour: {b.tour_name}</div>
+                              {b.start_date && (
+                                <div>
+                                  Start:{" "}
+                                  {new Date(b.start_date).toLocaleDateString()}
+                                </div>
+                              )}
+                              {b.end_date && (
+                                <div>
+                                  End:{" "}
+                                  {new Date(b.end_date).toLocaleDateString()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                 {/* Group Members */}
                 {selectedGroup.members && selectedGroup.members.length > 0 && (
@@ -1842,9 +2466,14 @@ export default function GroupBookings() {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {selectedGroup.members.map((member, index) => (
-                        <div key={member.id || index} className="p-4 border rounded-lg">
+                        <div
+                          key={member.id || index}
+                          className="p-4 border rounded-lg"
+                        >
                           <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-medium">{member.first_name} {member.last_name}</h5>
+                            <h5 className="font-medium">
+                              {member.first_name} {member.last_name}
+                            </h5>
                             {member.is_leader && (
                               <Badge variant="default" className="text-xs">
                                 <Crown className="mr-1 h-3 w-3" />
@@ -1878,21 +2507,37 @@ export default function GroupBookings() {
                             )}
 
                             {/* Individual Flight Information */}
-                            {(member.arrival_flight_number || member.departure_flight_number) && (
+                            {(member.arrival_flight_number ||
+                              member.departure_flight_number) && (
                               <div className="mt-3 pt-2 border-t">
-                                <div className="text-xs font-medium text-muted-foreground mb-2">Flight Details:</div>
+                                <div className="text-xs font-medium text-muted-foreground mb-2">
+                                  Flight Details:
+                                </div>
                                 {member.arrival_flight_number && (
                                   <div className="flex items-center gap-2 text-xs">
                                     <Plane className="h-3 w-3 text-blue-600" />
-                                    <span>Arrival: {member.arrival_flight_number}</span>
-                                    {member.arrival_flight_time && <span>at {member.arrival_flight_time}</span>}
+                                    <span>
+                                      Arrival: {member.arrival_flight_number}
+                                    </span>
+                                    {member.arrival_flight_time && (
+                                      <span>
+                                        at {member.arrival_flight_time}
+                                      </span>
+                                    )}
                                   </div>
                                 )}
                                 {member.departure_flight_number && (
                                   <div className="flex items-center gap-2 text-xs">
                                     <Plane className="h-3 w-3 text-orange-600 rotate-45" />
-                                    <span>Departure: {member.departure_flight_number}</span>
-                                    {member.departure_flight_time && <span>at {member.departure_flight_time}</span>}
+                                    <span>
+                                      Departure:{" "}
+                                      {member.departure_flight_number}
+                                    </span>
+                                    {member.departure_flight_time && (
+                                      <span>
+                                        at {member.departure_flight_time}
+                                      </span>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -1906,7 +2551,9 @@ export default function GroupBookings() {
 
                 {/* Group Created Date */}
                 <div className="text-sm text-muted-foreground border-t pt-4">
-                  Group created on {new Date(selectedGroup.created_at).toLocaleDateString()} at {new Date(selectedGroup.created_at).toLocaleTimeString()}
+                  Group created on{" "}
+                  {new Date(selectedGroup.created_at).toLocaleDateString()} at{" "}
+                  {new Date(selectedGroup.created_at).toLocaleTimeString()}
                 </div>
               </div>
             )}
@@ -1933,13 +2580,20 @@ export default function GroupBookings() {
                     <Input
                       id="edit_group_name"
                       value={newGroup.group_name}
-                      onChange={(e) => setNewGroup({...newGroup, group_name: e.target.value})}
+                      onChange={(e) =>
+                        setNewGroup({ ...newGroup, group_name: e.target.value })
+                      }
                       placeholder="Johnson Family, Corporate Retreat..."
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit_group_type">Group Type</Label>
-                    <Select value={newGroup.group_type} onValueChange={(value) => setNewGroup({...newGroup, group_type: value})}>
+                    <Select
+                      value={newGroup.group_type}
+                      onValueChange={(value) =>
+                        setNewGroup({ ...newGroup, group_type: value })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -1961,12 +2615,19 @@ export default function GroupBookings() {
                 <h3 className="text-lg font-semibold">Tour Dates</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="edit_tour_start_date">Tour Start Date</Label>
+                    <Label htmlFor="edit_tour_start_date">
+                      Tour Start Date
+                    </Label>
                     <Input
                       id="edit_tour_start_date"
                       type="date"
                       value={newGroup.tour_start_date}
-                      onChange={(e) => setNewGroup({...newGroup, tour_start_date: e.target.value})}
+                      onChange={(e) =>
+                        setNewGroup({
+                          ...newGroup,
+                          tour_start_date: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -1975,7 +2636,12 @@ export default function GroupBookings() {
                       id="edit_tour_end_date"
                       type="date"
                       value={newGroup.tour_end_date}
-                      onChange={(e) => setNewGroup({...newGroup, tour_end_date: e.target.value})}
+                      onChange={(e) =>
+                        setNewGroup({
+                          ...newGroup,
+                          tour_end_date: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -1987,22 +2653,34 @@ export default function GroupBookings() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-purple-600" />
-                    <h4 className="text-md font-semibold">Travel Arrangements</h4>
+                    <h4 className="text-md font-semibold">
+                      Travel Arrangements
+                    </h4>
                   </div>
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
                       id="edit_traveling_together"
                       checked={newGroup.traveling_together}
-                      onChange={(e) => setNewGroup({...newGroup, traveling_together: e.target.checked})}
+                      onChange={(e) =>
+                        setNewGroup({
+                          ...newGroup,
+                          traveling_together: e.target.checked,
+                        })
+                      }
                       className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                     />
-                    <Label htmlFor="edit_traveling_together" className="text-sm font-medium">
-                      All group members are traveling together (same dates and flights)
+                    <Label
+                      htmlFor="edit_traveling_together"
+                      className="text-sm font-medium"
+                    >
+                      All group members are traveling together (same dates and
+                      flights)
                     </Label>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Uncheck this if group members have different travel dates and flight arrangements.
+                    Uncheck this if group members have different travel dates
+                    and flight arrangements.
                   </p>
                 </div>
 
@@ -2010,21 +2688,35 @@ export default function GroupBookings() {
                 {newGroup.traveling_together && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="edit_arrival_date">Group Arrival Date</Label>
+                      <Label htmlFor="edit_arrival_date">
+                        Group Arrival Date
+                      </Label>
                       <Input
                         id="edit_arrival_date"
                         type="date"
                         value={newGroup.arrival_date}
-                        onChange={(e) => setNewGroup({...newGroup, arrival_date: e.target.value})}
+                        onChange={(e) =>
+                          setNewGroup({
+                            ...newGroup,
+                            arrival_date: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="edit_departure_date">Group Departure Date</Label>
+                      <Label htmlFor="edit_departure_date">
+                        Group Departure Date
+                      </Label>
                       <Input
                         id="edit_departure_date"
                         type="date"
                         value={newGroup.departure_date}
-                        onChange={(e) => setNewGroup({...newGroup, departure_date: e.target.value})}
+                        onChange={(e) =>
+                          setNewGroup({
+                            ...newGroup,
+                            departure_date: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </div>
@@ -2037,33 +2729,56 @@ export default function GroupBookings() {
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <Plane className="h-5 w-5 text-blue-600" />
-                        <h4 className="text-md font-semibold">Group Arrival Flight Details</h4>
+                        <h4 className="text-md font-semibold">
+                          Group Arrival Flight Details
+                        </h4>
                       </div>
                       <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="edit_arrival_flight_number">Flight Number</Label>
+                          <Label htmlFor="edit_arrival_flight_number">
+                            Flight Number
+                          </Label>
                           <Input
                             id="edit_arrival_flight_number"
                             value={newGroup.arrival_flight_number}
-                            onChange={(e) => setNewGroup({...newGroup, arrival_flight_number: e.target.value})}
+                            onChange={(e) =>
+                              setNewGroup({
+                                ...newGroup,
+                                arrival_flight_number: e.target.value,
+                              })
+                            }
                             placeholder="e.g. AI 123"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="edit_arrival_flight_time">Flight Time</Label>
+                          <Label htmlFor="edit_arrival_flight_time">
+                            Flight Time
+                          </Label>
                           <Input
                             id="edit_arrival_flight_time"
                             type="time"
                             value={newGroup.arrival_flight_time}
-                            onChange={(e) => setNewGroup({...newGroup, arrival_flight_time: e.target.value})}
+                            onChange={(e) =>
+                              setNewGroup({
+                                ...newGroup,
+                                arrival_flight_time: e.target.value,
+                              })
+                            }
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="edit_arrival_notes">Arrival Notes</Label>
+                          <Label htmlFor="edit_arrival_notes">
+                            Arrival Notes
+                          </Label>
                           <Input
                             id="edit_arrival_notes"
                             value={newGroup.arrival_notes}
-                            onChange={(e) => setNewGroup({...newGroup, arrival_notes: e.target.value})}
+                            onChange={(e) =>
+                              setNewGroup({
+                                ...newGroup,
+                                arrival_notes: e.target.value,
+                              })
+                            }
                             placeholder="Terminal, gate info..."
                           />
                         </div>
@@ -2074,33 +2789,56 @@ export default function GroupBookings() {
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <Plane className="h-5 w-5 text-orange-600 rotate-45" />
-                        <h4 className="text-md font-semibold">Group Departure Flight Details</h4>
+                        <h4 className="text-md font-semibold">
+                          Group Departure Flight Details
+                        </h4>
                       </div>
                       <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="edit_departure_flight_number">Flight Number</Label>
+                          <Label htmlFor="edit_departure_flight_number">
+                            Flight Number
+                          </Label>
                           <Input
                             id="edit_departure_flight_number"
                             value={newGroup.departure_flight_number}
-                            onChange={(e) => setNewGroup({...newGroup, departure_flight_number: e.target.value})}
+                            onChange={(e) =>
+                              setNewGroup({
+                                ...newGroup,
+                                departure_flight_number: e.target.value,
+                              })
+                            }
                             placeholder="e.g. AI 456"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="edit_departure_flight_time">Flight Time</Label>
+                          <Label htmlFor="edit_departure_flight_time">
+                            Flight Time
+                          </Label>
                           <Input
                             id="edit_departure_flight_time"
                             type="time"
                             value={newGroup.departure_flight_time}
-                            onChange={(e) => setNewGroup({...newGroup, departure_flight_time: e.target.value})}
+                            onChange={(e) =>
+                              setNewGroup({
+                                ...newGroup,
+                                departure_flight_time: e.target.value,
+                              })
+                            }
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="edit_departure_notes">Departure Notes</Label>
+                          <Label htmlFor="edit_departure_notes">
+                            Departure Notes
+                          </Label>
                           <Input
                             id="edit_departure_notes"
                             value={newGroup.departure_notes}
-                            onChange={(e) => setNewGroup({...newGroup, departure_notes: e.target.value})}
+                            onChange={(e) =>
+                              setNewGroup({
+                                ...newGroup,
+                                departure_notes: e.target.value,
+                              })
+                            }
                             placeholder="Terminal, check-in time..."
                           />
                         </div>
@@ -2113,7 +2851,9 @@ export default function GroupBookings() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <span className="h-5 w-5 text-green-600">💰</span>
-                    <h4 className="text-md font-semibold">Financial Information</h4>
+                    <h4 className="text-md font-semibold">
+                      Financial Information
+                    </h4>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
@@ -2124,7 +2864,12 @@ export default function GroupBookings() {
                         step="0.01"
                         min="0"
                         value={newGroup.total_cost}
-                        onChange={(e) => setNewGroup({...newGroup, total_cost: parseFloat(e.target.value) || 0})}
+                        onChange={(e) =>
+                          setNewGroup({
+                            ...newGroup,
+                            total_cost: parseFloat(e.target.value) || 0,
+                          })
+                        }
                         placeholder="0.00"
                       />
                     </div>
@@ -2136,25 +2881,40 @@ export default function GroupBookings() {
                         step="0.01"
                         min="0"
                         value={newGroup.amount_paid}
-                        onChange={(e) => setNewGroup({...newGroup, amount_paid: parseFloat(e.target.value) || 0})}
+                        onChange={(e) =>
+                          setNewGroup({
+                            ...newGroup,
+                            amount_paid: parseFloat(e.target.value) || 0,
+                          })
+                        }
                         placeholder="0.00"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="edit_deposit_amount">Deposit Amount</Label>
+                      <Label htmlFor="edit_deposit_amount">
+                        Deposit Amount
+                      </Label>
                       <Input
                         id="edit_deposit_amount"
                         type="number"
                         step="0.01"
                         min="0"
                         value={newGroup.deposit_amount}
-                        onChange={(e) => setNewGroup({...newGroup, deposit_amount: parseFloat(e.target.value) || 0})}
+                        onChange={(e) =>
+                          setNewGroup({
+                            ...newGroup,
+                            deposit_amount: parseFloat(e.target.value) || 0,
+                          })
+                        }
                         placeholder="0.00"
                       />
                     </div>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Outstanding Balance: ${((newGroup.total_cost || 0) - (newGroup.amount_paid || 0)).toFixed(2)}
+                    Outstanding Balance: $
+                    {(
+                      (newGroup.total_cost || 0) - (newGroup.amount_paid || 0)
+                    ).toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -2189,9 +2949,11 @@ export default function GroupBookings() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => updateMember(index, 'is_leader', !member.is_leader)}
+                          onClick={() =>
+                            updateMember(index, "is_leader", !member.is_leader)
+                          }
                         >
-                          {member.is_leader ? 'Remove Leader' : 'Make Leader'}
+                          {member.is_leader ? "Remove Leader" : "Make Leader"}
                         </Button>
                         {groupMembers.length > 1 && (
                           <Button
@@ -2211,7 +2973,9 @@ export default function GroupBookings() {
                         <Label>First Name *</Label>
                         <Input
                           value={member.first_name}
-                          onChange={(e) => updateMember(index, 'first_name', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(index, "first_name", e.target.value)
+                          }
                           placeholder="First name"
                         />
                       </div>
@@ -2219,7 +2983,9 @@ export default function GroupBookings() {
                         <Label>Last Name *</Label>
                         <Input
                           value={member.last_name}
-                          onChange={(e) => updateMember(index, 'last_name', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(index, "last_name", e.target.value)
+                          }
                           placeholder="Last name"
                         />
                       </div>
@@ -2228,7 +2994,9 @@ export default function GroupBookings() {
                         <Input
                           type="email"
                           value={member.email}
-                          onChange={(e) => updateMember(index, 'email', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(index, "email", e.target.value)
+                          }
                           placeholder="Email address"
                         />
                       </div>
@@ -2236,7 +3004,9 @@ export default function GroupBookings() {
                         <Label>Phone</Label>
                         <Input
                           value={member.phone}
-                          onChange={(e) => updateMember(index, 'phone', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(index, "phone", e.target.value)
+                          }
                           placeholder="Phone number"
                         />
                       </div>
@@ -2244,7 +3014,13 @@ export default function GroupBookings() {
                         <Label>Passport Number</Label>
                         <Input
                           value={member.passport_number}
-                          onChange={(e) => updateMember(index, 'passport_number', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(
+                              index,
+                              "passport_number",
+                              e.target.value,
+                            )
+                          }
                           placeholder="Passport number"
                         />
                       </div>
@@ -2252,7 +3028,9 @@ export default function GroupBookings() {
                         <Label>Nationality</Label>
                         <Input
                           value={member.nationality}
-                          onChange={(e) => updateMember(index, 'nationality', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(index, "nationality", e.target.value)
+                          }
                           placeholder="Nationality"
                         />
                       </div>
@@ -2261,14 +3039,22 @@ export default function GroupBookings() {
                         <Input
                           type="date"
                           value={member.date_of_birth}
-                          onChange={(e) => updateMember(index, 'date_of_birth', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(index, "date_of_birth", e.target.value)
+                          }
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Dietary Restrictions</Label>
                         <Input
                           value={member.dietary_restrictions}
-                          onChange={(e) => updateMember(index, 'dietary_restrictions', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(
+                              index,
+                              "dietary_restrictions",
+                              e.target.value,
+                            )
+                          }
                           placeholder="Allergies, preferences..."
                         />
                       </div>
@@ -2276,7 +3062,13 @@ export default function GroupBookings() {
                         <Label>Emergency Contact Name</Label>
                         <Input
                           value={member.emergency_contact_name}
-                          onChange={(e) => updateMember(index, 'emergency_contact_name', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(
+                              index,
+                              "emergency_contact_name",
+                              e.target.value,
+                            )
+                          }
                           placeholder="Emergency contact"
                         />
                       </div>
@@ -2284,7 +3076,13 @@ export default function GroupBookings() {
                         <Label>Emergency Contact Phone</Label>
                         <Input
                           value={member.emergency_contact_phone}
-                          onChange={(e) => updateMember(index, 'emergency_contact_phone', e.target.value)}
+                          onChange={(e) =>
+                            updateMember(
+                              index,
+                              "emergency_contact_phone",
+                              e.target.value,
+                            )
+                          }
                           placeholder="Emergency phone"
                         />
                       </div>
@@ -2295,27 +3093,42 @@ export default function GroupBookings() {
                       <div className="mt-4 space-y-4">
                         <h5 className="font-medium flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-purple-600" />
-                          Individual Travel Information for {member.first_name || `Member ${index + 1}`}
+                          Individual Travel Information for{" "}
+                          {member.first_name || `Member ${index + 1}`}
                         </h5>
 
                         {/* Individual Travel Dates */}
                         <div className="space-y-3">
-                          <h6 className="text-sm font-medium text-purple-600">Travel Dates</h6>
+                          <h6 className="text-sm font-medium text-purple-600">
+                            Travel Dates
+                          </h6>
                           <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-2">
                               <Label>Arrival Date</Label>
                               <Input
                                 type="date"
-                                value={member.arrival_date || ''}
-                                onChange={(e) => updateMember(index, 'arrival_date', e.target.value)}
+                                value={member.arrival_date || ""}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "arrival_date",
+                                    e.target.value,
+                                  )
+                                }
                               />
                             </div>
                             <div className="space-y-2">
                               <Label>Departure Date</Label>
                               <Input
                                 type="date"
-                                value={member.departure_date || ''}
-                                onChange={(e) => updateMember(index, 'departure_date', e.target.value)}
+                                value={member.departure_date || ""}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "departure_date",
+                                    e.target.value,
+                                  )
+                                }
                               />
                             </div>
                           </div>
@@ -2323,13 +3136,21 @@ export default function GroupBookings() {
 
                         {/* Individual Flight Information */}
                         <div className="space-y-3">
-                          <h6 className="text-sm font-medium text-blue-600">Arrival Flight</h6>
+                          <h6 className="text-sm font-medium text-blue-600">
+                            Arrival Flight
+                          </h6>
                           <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-2">
                               <Label>Flight Number</Label>
                               <Input
                                 value={member.arrival_flight_number}
-                                onChange={(e) => updateMember(index, 'arrival_flight_number', e.target.value)}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "arrival_flight_number",
+                                    e.target.value,
+                                  )
+                                }
                                 placeholder="e.g. AI 123"
                               />
                             </div>
@@ -2338,14 +3159,26 @@ export default function GroupBookings() {
                               <Input
                                 type="time"
                                 value={member.arrival_flight_time}
-                                onChange={(e) => updateMember(index, 'arrival_flight_time', e.target.value)}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "arrival_flight_time",
+                                    e.target.value,
+                                  )
+                                }
                               />
                             </div>
                             <div className="space-y-2">
                               <Label>Arrival Notes</Label>
                               <Input
                                 value={member.arrival_notes}
-                                onChange={(e) => updateMember(index, 'arrival_notes', e.target.value)}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "arrival_notes",
+                                    e.target.value,
+                                  )
+                                }
                                 placeholder="Terminal, gate..."
                               />
                             </div>
@@ -2353,13 +3186,21 @@ export default function GroupBookings() {
                         </div>
 
                         <div className="space-y-3">
-                          <h6 className="text-sm font-medium text-orange-600">Departure Flight</h6>
+                          <h6 className="text-sm font-medium text-orange-600">
+                            Departure Flight
+                          </h6>
                           <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-2">
                               <Label>Flight Number</Label>
                               <Input
                                 value={member.departure_flight_number}
-                                onChange={(e) => updateMember(index, 'departure_flight_number', e.target.value)}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "departure_flight_number",
+                                    e.target.value,
+                                  )
+                                }
                                 placeholder="e.g. AI 456"
                               />
                             </div>
@@ -2368,14 +3209,26 @@ export default function GroupBookings() {
                               <Input
                                 type="time"
                                 value={member.departure_flight_time}
-                                onChange={(e) => updateMember(index, 'departure_flight_time', e.target.value)}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "departure_flight_time",
+                                    e.target.value,
+                                  )
+                                }
                               />
                             </div>
                             <div className="space-y-2">
                               <Label>Departure Notes</Label>
                               <Input
                                 value={member.departure_notes}
-                                onChange={(e) => updateMember(index, 'departure_notes', e.target.value)}
+                                onChange={(e) =>
+                                  updateMember(
+                                    index,
+                                    "departure_notes",
+                                    e.target.value,
+                                  )
+                                }
                                 placeholder="Terminal, check-in..."
                               />
                             </div>
@@ -2389,11 +3242,18 @@ export default function GroupBookings() {
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit_special_requirements">Special Requirements</Label>
+                  <Label htmlFor="edit_special_requirements">
+                    Special Requirements
+                  </Label>
                   <Textarea
                     id="edit_special_requirements"
                     value={newGroup.special_requirements}
-                    onChange={(e) => setNewGroup({...newGroup, special_requirements: e.target.value})}
+                    onChange={(e) =>
+                      setNewGroup({
+                        ...newGroup,
+                        special_requirements: e.target.value,
+                      })
+                    }
                     placeholder="Any special accommodations needed..."
                   />
                 </div>
@@ -2402,7 +3262,9 @@ export default function GroupBookings() {
                   <Textarea
                     id="edit_group_notes"
                     value={newGroup.group_notes}
-                    onChange={(e) => setNewGroup({...newGroup, group_notes: e.target.value})}
+                    onChange={(e) =>
+                      setNewGroup({ ...newGroup, group_notes: e.target.value })
+                    }
                     placeholder="Additional notes about the group..."
                   />
                 </div>
@@ -2419,19 +3281,25 @@ export default function GroupBookings() {
                     setIsCancelDialogOpen(true);
                   }
                 }}
-                disabled={editingGroup?.status === 'cancelled'}
+                disabled={editingGroup?.status === "cancelled"}
               >
                 Cancel Reservation
               </Button>
 
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => {
-                  setIsEditDialogOpen(false);
-                  resetForm();
-                }}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    resetForm();
+                  }}
+                >
                   Cancel
                 </Button>
-                <Button onClick={() => updateGroup(editingGroup?.id)} disabled={isCreating}>
+                <Button
+                  onClick={() => updateGroup(editingGroup?.id)}
+                  disabled={isCreating}
+                >
                   {isCreating ? (
                     <div className="flex items-center">
                       <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
@@ -2452,16 +3320,20 @@ export default function GroupBookings() {
             <DialogHeader>
               <DialogTitle>Delete Group Booking</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete this group booking? This action cannot be undone.
+                Are you sure you want to delete this group booking? This action
+                cannot be undone.
               </DialogDescription>
             </DialogHeader>
 
             {deletingGroup && (
               <div className="py-4">
                 <div className="p-4 bg-muted rounded-lg">
-                  <h4 className="font-semibold text-lg">{deletingGroup.group_name}</h4>
+                  <h4 className="font-semibold text-lg">
+                    {deletingGroup.group_name}
+                  </h4>
                   <p className="text-sm text-muted-foreground">
-                    {deletingGroup.total_members} member(s) • {deletingGroup.group_type}
+                    {deletingGroup.total_members} member(s) •{" "}
+                    {deletingGroup.group_type}
                   </p>
                   {deletingGroup.leader_name && (
                     <p className="text-sm text-muted-foreground">
@@ -2472,7 +3344,8 @@ export default function GroupBookings() {
 
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-sm text-red-800">
-                    <strong>Warning:</strong> This will permanently delete the group booking and remove all associated member records.
+                    <strong>Warning:</strong> This will permanently delete the
+                    group booking and remove all associated member records.
                   </p>
                 </div>
               </div>
@@ -2505,16 +3378,20 @@ export default function GroupBookings() {
             <DialogHeader>
               <DialogTitle>Cancel Reservation</DialogTitle>
               <DialogDescription>
-                Cancel this group reservation and process refund. This action cannot be undone.
+                Cancel this group reservation and process refund. This action
+                cannot be undone.
               </DialogDescription>
             </DialogHeader>
 
             {cancelingGroup && (
               <div className="py-4">
                 <div className="p-4 bg-muted rounded-lg mb-4">
-                  <h4 className="font-semibold text-lg">{cancelingGroup.group_name}</h4>
+                  <h4 className="font-semibold text-lg">
+                    {cancelingGroup.group_name}
+                  </h4>
                   <p className="text-sm text-muted-foreground">
-                    {cancelingGroup.total_members} member(s) ��� {cancelingGroup.group_type}
+                    {cancelingGroup.total_members} member(s) ���{" "}
+                    {cancelingGroup.group_type}
                   </p>
                   {cancelingGroup.leader_name && (
                     <p className="text-sm text-muted-foreground">
@@ -2523,17 +3400,22 @@ export default function GroupBookings() {
                   )}
                   <div className="mt-2 pt-2 border-t">
                     <p className="text-sm">
-                      <span className="font-medium">Total Cost:</span> ${(cancelingGroup.total_cost || 0).toFixed(2)}
+                      <span className="font-medium">Total Cost:</span> $
+                      {(cancelingGroup.total_cost || 0).toFixed(2)}
                     </p>
                     <p className="text-sm">
-                      <span className="font-medium">Amount Paid:</span> ${(cancelingGroup.amount_paid || 0).toFixed(2)}
+                      <span className="font-medium">Amount Paid:</span> $
+                      {(cancelingGroup.amount_paid || 0).toFixed(2)}
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="refund_amount" className="text-sm font-medium">
+                    <Label
+                      htmlFor="refund_amount"
+                      className="text-sm font-medium"
+                    >
                       Refund Amount ($)
                     </Label>
                     <Input
@@ -2541,18 +3423,23 @@ export default function GroupBookings() {
                       type="number"
                       step="0.01"
                       value={refundAmount}
-                      onChange={(e) => setRefundAmount(parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        setRefundAmount(parseFloat(e.target.value) || 0)
+                      }
                       placeholder="Enter refund amount"
                       className="mt-1"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Maximum refundable: ${(cancelingGroup.amount_paid || 0).toFixed(2)}
+                      Maximum refundable: $
+                      {(cancelingGroup.amount_paid || 0).toFixed(2)}
                     </p>
                   </div>
 
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-800">
-                      <strong>Warning:</strong> This will mark the reservation as cancelled and record the refund amount for tracking purposes.
+                      <strong>Warning:</strong> This will mark the reservation
+                      as cancelled and record the refund amount for tracking
+                      purposes.
                     </p>
                   </div>
                 </div>
@@ -2572,8 +3459,14 @@ export default function GroupBookings() {
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => cancelingGroup && cancelReservation(cancelingGroup.id, refundAmount)}
-                disabled={refundAmount < 0 || refundAmount > (cancelingGroup?.amount_paid || 0)}
+                onClick={() =>
+                  cancelingGroup &&
+                  cancelReservation(cancelingGroup.id, refundAmount)
+                }
+                disabled={
+                  refundAmount < 0 ||
+                  refundAmount > (cancelingGroup?.amount_paid || 0)
+                }
               >
                 Confirm Cancellation
               </Button>
@@ -2600,7 +3493,9 @@ export default function GroupBookings() {
             <div className="flex items-center space-x-2">
               <Users className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-2xl font-bold">{groups.filter(g => g.status === 'active').length}</p>
+                <p className="text-2xl font-bold">
+                  {groups.filter((g) => g.status === "active").length}
+                </p>
                 <p className="text-sm text-muted-foreground">Active Groups</p>
               </div>
             </div>
@@ -2611,7 +3506,9 @@ export default function GroupBookings() {
             <div className="flex items-center space-x-2">
               <Users className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="text-2xl font-bold">{groups.reduce((sum, g) => sum + g.total_members, 0)}</p>
+                <p className="text-2xl font-bold">
+                  {groups.reduce((sum, g) => sum + g.total_members, 0)}
+                </p>
                 <p className="text-sm text-muted-foreground">Total Members</p>
               </div>
             </div>
@@ -2622,7 +3519,9 @@ export default function GroupBookings() {
             <div className="flex items-center space-x-2">
               <Users className="h-5 w-5 text-orange-600" />
               <div>
-                <p className="text-2xl font-bold">{groups.filter(g => g.group_type === 'family').length}</p>
+                <p className="text-2xl font-bold">
+                  {groups.filter((g) => g.group_type === "family").length}
+                </p>
                 <p className="text-sm text-muted-foreground">Family Groups</p>
               </div>
             </div>
@@ -2633,31 +3532,47 @@ export default function GroupBookings() {
       {/* Search and Filter */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex gap-4 items-center">
+          <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search groups..."
+                  placeholder="Search by name or leader..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto">
+              <Input
+                placeholder="Group ID"
+                value={groupIdFilter}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[^0-9]/g, "");
+                  setGroupIdFilter(v);
+                }}
+                inputMode="numeric"
+              />
+              <Input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+              />
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -2675,14 +3590,22 @@ export default function GroupBookings() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
-                      <h3 className="text-lg font-semibold text-foreground">{group.group_name}</h3>
-                      <Badge variant={getGroupTypeColor(group.group_type)}>{group.group_type}</Badge>
-                      <Badge variant={getStatusColor(group.status)}>{group.status}</Badge>
+                      <h3 className="text-lg font-semibold text-foreground">
+                        {group.group_name}
+                      </h3>
+                      <Badge variant="outline">ID #{group.id}</Badge>
+                      <Badge variant={getGroupTypeColor(group.group_type)}>
+                        {group.group_type}
+                      </Badge>
+                      <Badge variant={getStatusColor(group.status)}>
+                        {group.status}
+                      </Badge>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
                       <div className="flex items-center">
                         <Users className="mr-1 h-4 w-4" />
-                        {group.total_members} member{group.total_members > 1 ? 's' : ''}
+                        {group.total_members} member
+                        {group.total_members > 1 ? "s" : ""}
                       </div>
                       {group.leader_name && (
                         <div className="flex items-center">
@@ -2700,7 +3623,15 @@ export default function GroupBookings() {
                       {(group.tour_start_date || group.tour_end_date) && (
                         <div className="flex items-center">
                           <Calendar className="mr-1 h-4 w-4" />
-                          {group.tour_start_date ? new Date(group.tour_start_date).toLocaleDateString() : 'TBD'} - {group.tour_end_date ? new Date(group.tour_end_date).toLocaleDateString() : 'TBD'}
+                          {group.tour_start_date
+                            ? new Date(
+                                group.tour_start_date,
+                              ).toLocaleDateString()
+                            : "TBD"}{" "}
+                          -{" "}
+                          {group.tour_end_date
+                            ? new Date(group.tour_end_date).toLocaleDateString()
+                            : "TBD"}
                         </div>
                       )}
 
@@ -2710,13 +3641,17 @@ export default function GroupBookings() {
                           {group.arrival_flight_number && (
                             <div className="flex items-center text-blue-600">
                               <Plane className="mr-1 h-4 w-4" />
-                              Arrival: {group.arrival_flight_number} {group.arrival_flight_time && `at ${group.arrival_flight_time}`}
+                              Arrival: {group.arrival_flight_number}{" "}
+                              {group.arrival_flight_time &&
+                                `at ${group.arrival_flight_time}`}
                             </div>
                           )}
                           {group.departure_flight_number && (
                             <div className="flex items-center text-orange-600">
                               <Plane className="mr-1 h-4 w-4 rotate-45" />
-                              Departure: {group.departure_flight_number} {group.departure_flight_time && `at ${group.departure_flight_time}`}
+                              Departure: {group.departure_flight_number}{" "}
+                              {group.departure_flight_time &&
+                                `at ${group.departure_flight_time}`}
                             </div>
                           )}
                         </>
@@ -2729,15 +3664,26 @@ export default function GroupBookings() {
                       {(group.total_cost || group.amount_paid) && (
                         <div className="flex items-center">
                           <span className="mr-1 text-green-600">💰</span>
-                          Total: ${(group.total_cost || 0).toFixed(2)} | Paid: ${(group.amount_paid || 0).toFixed(2)}
-                          {group.status === 'cancelled' && group.refund_amount > 0 ? (
+                          Total: ${(group.total_cost || 0).toFixed(2)} | Paid: $
+                          {(group.amount_paid || 0).toFixed(2)}
+                          {group.status === "cancelled" &&
+                          group.refund_amount > 0 ? (
                             <span className="ml-2 text-orange-600 font-medium">
-                              (Refunded: ${(group.refund_amount || 0).toFixed(2)})
+                              (Refunded: $
+                              {(group.refund_amount || 0).toFixed(2)})
                             </span>
-                          ) : ((group.total_cost || 0) - (group.amount_paid || 0)) > 0 && (
-                            <span className="ml-2 text-red-600 font-medium">
-                              (${((group.total_cost || 0) - (group.amount_paid || 0)).toFixed(2)} due)
-                            </span>
+                          ) : (
+                            (group.total_cost || 0) - (group.amount_paid || 0) >
+                              0 && (
+                              <span className="ml-2 text-red-600 font-medium">
+                                ($
+                                {(
+                                  (group.total_cost || 0) -
+                                  (group.amount_paid || 0)
+                                ).toFixed(2)}{" "}
+                                due)
+                              </span>
+                            )
                           )}
                         </div>
                       )}
@@ -2748,7 +3694,9 @@ export default function GroupBookings() {
                       variant="outline"
                       size="sm"
                       onClick={async () => {
-                        const groupWithMembers = await fetchGroupWithMembers(group.id);
+                        const groupWithMembers = await fetchGroupWithMembers(
+                          group.id,
+                        );
                         setSelectedGroup(groupWithMembers || group);
                         setIsViewDialogOpen(true);
                       }}
@@ -2789,10 +3737,12 @@ export default function GroupBookings() {
         <Card>
           <CardContent className="p-8 text-center">
             <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No groups found</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              No groups found
+            </h3>
             <p className="text-muted-foreground">
-              {searchTerm || statusFilter !== "all" 
-                ? "Try adjusting your search or filter criteria" 
+              {searchTerm || statusFilter !== "all"
+                ? "Try adjusting your search or filter criteria"
                 : "Create your first group booking to get started"}
             </p>
           </CardContent>

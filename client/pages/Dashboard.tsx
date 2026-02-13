@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -69,8 +75,12 @@ export default function Dashboard() {
   const [stats, setStats] = useState<GroupStats | null>(null);
   const [recentGroups, setRecentGroups] = useState<Group[]>([]);
   const [todaysArrivals, setTodaysArrivals] = useState<TransportSchedule[]>([]);
-  const [todaysDepartures, setTodaysDepartures] = useState<TransportSchedule[]>([]);
-  const [todaysActivities, setTodaysActivities] = useState<ActivityInstance[]>([]);
+  const [todaysDepartures, setTodaysDepartures] = useState<TransportSchedule[]>(
+    [],
+  );
+  const [todaysActivities, setTodaysActivities] = useState<ActivityInstance[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -79,12 +89,18 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const [statsResponse, groupsResponse, arrivalsResponse, departuresResponse, activitiesResponse] = await Promise.all([
-        fetch('/api/dashboard/stats'),
-        fetch('/api/groups'),
-        fetch('/api/dashboard/arrivals'),
-        fetch('/api/dashboard/departures'),
-        fetch('/api/activities/today')
+      const [
+        statsResponse,
+        groupsResponse,
+        arrivalsResponse,
+        departuresResponse,
+        activitiesResponse,
+      ] = await Promise.all([
+        fetch("/api/dashboard/stats"),
+        fetch("/api/groups"),
+        fetch("/api/dashboard/arrivals"),
+        fetch("/api/dashboard/departures"),
+        fetch("/api/activities/today"),
       ]);
 
       const statsData = await statsResponse.json();
@@ -99,9 +115,8 @@ export default function Dashboard() {
       setTodaysArrivals(arrivalsData);
       setTodaysDepartures(departuresData);
       setTodaysActivities(activitiesData);
-
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
     }
@@ -129,11 +144,10 @@ export default function Dashboard() {
     location: string;
   }
 
-
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -145,10 +159,10 @@ export default function Dashboard() {
     const start = new Date(startDate).getTime();
     const end = new Date(endDate).getTime();
     const now = new Date().getTime();
-    
+
     if (now < start) return 0;
     if (now > end) return 100;
-    
+
     return Math.round(((now - start) / (end - start)) * 100);
   };
 
@@ -176,7 +190,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button onClick={() => navigate('/group-bookings')}>
+          <Button onClick={() => navigate("/group-bookings")}>
             <Plus className="mr-2 h-4 w-4" />
             New Group Booking
           </Button>
@@ -193,7 +207,9 @@ export default function Dashboard() {
                   <p className="text-sm font-medium text-muted-foreground">
                     Total Groups
                   </p>
-                  <p className="text-2xl font-bold text-foreground">{stats.total_groups}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {stats.total_groups}
+                  </p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                   <Users className="h-6 w-6 text-primary" />
@@ -209,7 +225,9 @@ export default function Dashboard() {
                   <p className="text-sm font-medium text-muted-foreground">
                     Active Groups
                   </p>
-                  <p className="text-2xl font-bold text-foreground">{stats.active_groups}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {stats.active_groups}
+                  </p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                   <Mountain className="h-6 w-6 text-primary" />
@@ -225,7 +243,9 @@ export default function Dashboard() {
                   <p className="text-sm font-medium text-muted-foreground">
                     Total Members
                   </p>
-                  <p className="text-2xl font-bold text-foreground">{stats.total_members}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {stats.total_members}
+                  </p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                   <Users className="h-6 w-6 text-primary" />
@@ -241,7 +261,9 @@ export default function Dashboard() {
                   <p className="text-sm font-medium text-muted-foreground">
                     Available Vehicles
                   </p>
-                  <p className="text-2xl font-bold text-foreground">{stats.available_vehicles}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {stats.available_vehicles}
+                  </p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                   <Car className="h-6 w-6 text-primary" />
@@ -268,9 +290,7 @@ export default function Dashboard() {
                 </Button>
               </ArrivalDetailsDialog>
             </CardTitle>
-            <CardDescription>
-              Groups arriving today
-            </CardDescription>
+            <CardDescription>Groups arriving today</CardDescription>
           </CardHeader>
           <CardContent>
             {todaysArrivals.length === 0 ? (
@@ -281,19 +301,34 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {todaysArrivals.slice(0, 2).map((arrival) => (
-                  <div key={arrival.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div
+                    key={arrival.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
                     <div className="flex-1">
                       <h4 className="font-medium text-foreground">
-                        {arrival.passengers?.map(p => `${p.name} ${p.groupName ? `(${p.groupName})` : ''}`).join(', ') || 'Passenger names TBD'}
+                        {arrival.passengers
+                          ?.map(
+                            (p) =>
+                              `${p.name} ${p.groupName ? `(${p.groupName})` : ""}`,
+                          )
+                          .join(", ") || "Passenger names TBD"}
                       </h4>
                       <p className="text-sm text-muted-foreground">
-                        {arrival.passenger_count} passengers • {new Date(arrival.pickup_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        {arrival.passenger_count} passengers •{" "}
+                        {new Date(arrival.pickup_time).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </p>
                       <p className="text-xs text-blue-600">
                         {arrival.pickup_location} → {arrival.dropoff_location}
                       </p>
                     </div>
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    <Badge
+                      variant="outline"
+                      className="bg-blue-50 text-blue-700 border-blue-200"
+                    >
                       {arrival.status}
                     </Badge>
                   </div>
@@ -322,9 +357,7 @@ export default function Dashboard() {
                 </Button>
               </DepartureDetailsDialog>
             </CardTitle>
-            <CardDescription>
-              Groups departing today
-            </CardDescription>
+            <CardDescription>Groups departing today</CardDescription>
           </CardHeader>
           <CardContent>
             {todaysDepartures.length === 0 ? (
@@ -335,19 +368,35 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {todaysDepartures.slice(0, 2).map((departure) => (
-                  <div key={departure.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div
+                    key={departure.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
                     <div className="flex-1">
                       <h4 className="font-medium text-foreground">
-                        {departure.passengers?.map(p => `${p.name} ${p.groupName ? `(${p.groupName})` : ''}`).join(', ') || 'Passenger names TBD'}
+                        {departure.passengers
+                          ?.map(
+                            (p) =>
+                              `${p.name} ${p.groupName ? `(${p.groupName})` : ""}`,
+                          )
+                          .join(", ") || "Passenger names TBD"}
                       </h4>
                       <p className="text-sm text-muted-foreground">
-                        {departure.passenger_count} passengers • {new Date(departure.pickup_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        {departure.passenger_count} passengers •{" "}
+                        {new Date(departure.pickup_time).toLocaleTimeString(
+                          [],
+                          { hour: "2-digit", minute: "2-digit" },
+                        )}
                       </p>
                       <p className="text-xs text-orange-600">
-                        {departure.pickup_location} → {departure.dropoff_location}
+                        {departure.pickup_location} →{" "}
+                        {departure.dropoff_location}
                       </p>
                     </div>
-                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                    <Badge
+                      variant="outline"
+                      className="bg-orange-50 text-orange-700 border-orange-200"
+                    >
                       {departure.status}
                     </Badge>
                   </div>
@@ -376,9 +425,7 @@ export default function Dashboard() {
                 </Button>
               </PrintActivityDetails>
             </CardTitle>
-            <CardDescription>
-              Activities scheduled for today
-            </CardDescription>
+            <CardDescription>Activities scheduled for today</CardDescription>
           </CardHeader>
           <CardContent>
             {todaysActivities.length === 0 ? (
@@ -389,7 +436,10 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {todaysActivities.slice(0, 2).map((activity) => (
-                  <div key={activity.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div
+                    key={activity.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
                     <div className="flex-1">
                       <h4 className="font-medium text-foreground">
                         {activity.activity_name}
@@ -401,7 +451,10 @@ export default function Dashboard() {
                         {activity.location}
                       </p>
                     </div>
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    <Badge
+                      variant="outline"
+                      className="bg-green-50 text-green-700 border-green-200"
+                    >
                       {activity.status}
                     </Badge>
                   </div>
@@ -433,26 +486,40 @@ export default function Dashboard() {
             <CardContent>
               <div className="space-y-4">
                 {recentGroups.map((group) => (
-                  <div key={group.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div
+                    key={group.id}
+                    className="flex items-center justify-between p-4 border border-border rounded-lg"
+                  >
                     <div className="flex items-center space-x-4">
                       <div className="text-center">
-                        <div className="text-lg font-semibold text-foreground">{group.total_members}</div>
-                        <div className="text-sm text-muted-foreground">Members</div>
+                        <div className="text-lg font-semibold text-foreground">
+                          {group.total_members}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Members
+                        </div>
                       </div>
                       <div>
-                        <div className="font-medium text-foreground">{group.group_name}</div>
+                        <div className="font-medium text-foreground">
+                          {group.group_name}
+                        </div>
                         <div className="text-sm text-muted-foreground">
                           {group.group_type} • Led by {group.leader_name}
                         </div>
                         {group.tour_start_date && (
                           <div className="text-sm text-muted-foreground">
-                            Tour: {formatDate(group.tour_start_date)} - {group.tour_end_date ? formatDate(group.tour_end_date) : 'TBD'}
+                            Tour: {formatDate(group.tour_start_date)} -{" "}
+                            {group.tour_end_date
+                              ? formatDate(group.tour_end_date)
+                              : "TBD"}
                           </div>
                         )}
                       </div>
                     </div>
                     <Badge
-                      variant={group.status === "active" ? "default" : "secondary"}
+                      variant={
+                        group.status === "active" ? "default" : "secondary"
+                      }
                       className="ml-2 capitalize"
                     >
                       {group.status}
@@ -462,59 +529,68 @@ export default function Dashboard() {
                 {recentGroups.length === 0 && (
                   <div className="text-center py-8">
                     <Users className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">No group bookings found</p>
+                    <p className="text-sm text-muted-foreground">
+                      No group bookings found
+                    </p>
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
         </div>
-
       </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card
           className="hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => navigate('/group-bookings')}
+          onClick={() => navigate("/group-bookings")}
         >
           <CardContent className="p-6 text-center">
             <Users className="mx-auto h-8 w-8 text-primary mb-2" />
             <h3 className="font-semibold text-foreground">Group Bookings</h3>
-            <p className="text-sm text-muted-foreground mt-1">Manage group bookings and members</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Manage group bookings and members
+            </p>
           </CardContent>
         </Card>
 
         <Card
           className="hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => navigate('/transport')}
+          onClick={() => navigate("/transport")}
         >
           <CardContent className="p-6 text-center">
             <Car className="mx-auto h-8 w-8 text-primary mb-2" />
             <h3 className="font-semibold text-foreground">Transport</h3>
-            <p className="text-sm text-muted-foreground mt-1">Schedule vehicles and drivers</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Schedule vehicles and drivers
+            </p>
           </CardContent>
         </Card>
 
         <Card
           className="hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => navigate('/activities')}
+          onClick={() => navigate("/activities")}
         >
           <CardContent className="p-6 text-center">
             <Mountain className="mx-auto h-8 w-8 text-primary mb-2" />
             <h3 className="font-semibold text-foreground">Activities</h3>
-            <p className="text-sm text-muted-foreground mt-1">Track tour activities</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Track tour activities
+            </p>
           </CardContent>
         </Card>
 
         <Card
           className="hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => navigate('/hotels')}
+          onClick={() => navigate("/hotels")}
         >
           <CardContent className="p-6 text-center">
             <Hotel className="mx-auto h-8 w-8 text-primary mb-2" />
             <h3 className="font-semibold text-foreground">Hotels</h3>
-            <p className="text-sm text-muted-foreground mt-1">Manage accommodations</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Manage accommodations
+            </p>
           </CardContent>
         </Card>
       </div>
